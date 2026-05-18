@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+
+model/saved_model/
+*.h5
+*.keras
+*.pkl
+*.joblib
+
+data/
+test/
+
+.ipynb_checkpoints/
