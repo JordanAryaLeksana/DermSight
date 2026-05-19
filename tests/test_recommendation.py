@@ -1,5 +1,5 @@
 import logging
-
+from pprint import pprint
 import pytest
 
 from llm.recommendation import SkinRecommendationService
@@ -30,11 +30,17 @@ def service():
     )
 
 
+
+
+
 def test_generate_recommendation_returns_expected_structure(service):
     result = service.generate_recommendation(
         predicted_label="Acne",
         confidence=0.87,
     )
+
+    print("\n=== Recommendation Result ===")
+    pprint(result)
 
     assert isinstance(result, dict)
     assert result["predicted_label"] == "Acne"
@@ -56,15 +62,20 @@ def test_generate_recommendation_calls_retriever_and_llm(service):
 
 
 def test_generate_recommendation_logs_process(service, caplog):
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.INFO, logger="DERMIGHT")
+
+    logging.getLogger("DERMIGHT").propagate = True
 
     service.generate_recommendation(
         predicted_label="Acne",
         confidence=0.85,
     )
 
-    assert "Generating recommendation for label=Acne" in caplog.text
-    assert "Retrieval result: matched=True, disease=Acne" in caplog.text
+    assert "Generating recommendation" in caplog.text
+    assert "predicted_label=Acne" in caplog.text
+    assert "confidence=0.85" in caplog.text
+    assert "Retrieval result received" in caplog.text
+    assert "disease=Acne" in caplog.text
     assert "Prompt messages built successfully" in caplog.text
     assert "LLM recommendation generated successfully" in caplog.text
 
