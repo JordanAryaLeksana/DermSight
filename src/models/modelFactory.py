@@ -1,4 +1,4 @@
-from src.models.efficientnet import build_efficientnet_classifier
+from src.models.efficientNet import build_efficientnet_classifier
 
 
 def build_model(
@@ -17,7 +17,9 @@ def build_model(
     Tujuannya agar script training tidak perlu tahu detail class model.
     Kalau nanti ingin tambah ResNet, MobileNet, DenseNet, cukup register di sini.
     """
-
+    model_name = model_name.lower()
+    if num_classes <= 1:
+        raise ValueError("num_classes harus lebih dari 1 untuk klasifikasi multi-class.")
     efficientnet_models = [
         "efficientnet_b0",
         "efficientnet_b1",

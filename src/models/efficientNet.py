@@ -3,15 +3,6 @@ from tensorflow.keras import layers
 
 
 class EfficientNetSkinClassifier(tf.keras.Model):
-    """
-    Reusable EfficientNet classifier untuk klasifikasi penyakit kulit.
-
-    Logic dibuat mirip dengan ResNet custom:
-    - pilih backbone
-    - extract features
-    - shared projection block
-    - classification head
-    """
 
     SUPPORTED_BACKBONES = {
         "efficientnet_b0": tf.keras.applications.EfficientNetB0,
