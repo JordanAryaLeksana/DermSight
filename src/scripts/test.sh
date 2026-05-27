@@ -2,35 +2,29 @@
 
 set -e
 
-LOG_DIR="logs"
-PORT=6006
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+cd "${PROJECT_ROOT}"
+
+export PYTHONPATH="${PROJECT_ROOT}:${PROJECT_ROOT}/src:${PYTHONPATH}"
 
 echo "===================================="
-echo "Starting TensorBoard..."
-echo "TensorBoard URL: http://localhost:${PORT}"
+echo "Project root: ${PROJECT_ROOT}"
+echo "Python path: ${PYTHONPATH}"
+echo "Starting test/evaluation pipeline..."
 echo "===================================="
 
-python -m src.training.main --mode tensorboard --log-dir ${LOG_DIR} --port ${PORT} &
-TENSORBOARD_PID=$!
-
-sleep 3
-
-if command -v xdg-open > /dev/null; then
-    xdg-open "http://localhost:${PORT}" > /dev/null 2>&1 &
-fi
+python "${PROJECT_ROOT}/src/main.py" --mode test
 
 echo "===================================="
-echo "Starting training..."
+echo "Testing finished."
+echo "Check output files in: outputs/"
 echo "===================================="
 
-python -m src.training.main --mode train
-
-echo "===================================="
-echo "Training finished."
-echo "TensorBoard masih berjalan di:"
-echo "http://localhost:${PORT}"
-echo "===================================="
-
-echo "Tekan CTRL+C untuk stop TensorBoard."
-
-wait $TENSORBOARD_PID
+echo "Generated files should include:"
+echo "- outputs/test_metrics.json"
+echo "- outputs/classification_report.json"
+echo "- outputs/classification_report.txt"
+echo "- outputs/test_predictions.csv"
+echo "- outputs/confusion_matrix.csv"

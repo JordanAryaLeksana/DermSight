@@ -1,11 +1,8 @@
-import os 
-import json
-import tensorflow as tf
-
 import os
 import json
+import numpy as np
 import tensorflow as tf
-
+from tqdm import tqdm
 from src.training.loader import build_datasets
 from src.models.modelFactory import build_model
 from src.training.losses import get_loss
@@ -22,11 +19,12 @@ from src.training.tensorboard_utils import (
 )
 from src.training.lr_scheduler import ManualReduceLROnPlateau
 
-def setup_gpu(use_mixed_precision:bool = True):
+
+def setup_gpu(use_mixed_precision: bool = True):
     gpus = tf.config.list_physical_devices("GPU")
     if gpus:
         print(f"GPU DETECTED: {gpus}")
-    
+
         for gpu in gpus:
             try:
                 tf.config.experimental.set_memory_growth(gpu, True)
@@ -44,89 +42,146 @@ def setup_gpu(use_mixed_precision:bool = True):
 
 def train_one_epoch(
     model,
-    train_ds, 
+    train_ds,
     loss_fn,
-    optimizer, 
-    train_metrics 
+    optimizer,
+    train_metrics,
+    epoch=None,
+    total_epochs=None,
+    class_weights=None,
 ):
-    for step, (images, labels) in enumerate(train_ds):
+
+    total_steps = tf.data.experimental.cardinality(train_ds).numpy()
+
+    progress_bar = tqdm(
+        train_ds,
+        total=total_steps if total_steps > 0 else None,
+        desc=f"Training Epoch {epoch}/{total_epochs}" if epoch else "Training",
+        unit="batch",
+        ncols=120,
+    )
+
+    for step, (images, labels) in enumerate(progress_bar):
         with tf.GradientTape() as tape:
-            predictions = model(images, Training= True)
-            
-            loss = loss_fn(labels, predictions)
-            loss = tf.reduce_mean()
-            
+            predictions = model(images, training=True)
+
+            loss_per_sample = loss_fn(labels, predictions)
+
+            if class_weights is not None:
+                sample_weights = tf.reduce_sum(
+                    tf.cast(labels, tf.float32) * class_weights,
+                    axis=-1
+                )
+                loss_per_sample = loss_per_sample * sample_weights
+
+            loss = tf.reduce_mean(loss_per_sample)
+
         gradients = tape.gradient(loss, model.trainable_variables)
-        
-        optimizer.apply_gradients(
-            zip(gradients, model.trainable_variables)
-        )
+
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
         train_metrics["loss"].update_state(loss)
         train_metrics["accuracy"].update_state(labels, predictions)
         train_metrics["mae"].update_state(labels, predictions)
 
         if "macro_f1" in train_metrics:
-            train_metrics["macro_f1"].update_state(labels, predictions)    
+            train_metrics["macro_f1"].update_state(labels, predictions)
+
+        progress_bar.set_postfix(
+            {
+                "loss": f"{train_metrics['loss'].result().numpy():.4f}",
+                "acc": f"{train_metrics['accuracy'].result().numpy():.4f}",
+                "mae": f"{train_metrics['mae'].result().numpy():.4f}",
+                "f1": (
+                    f"{train_metrics['macro_f1'].result().numpy():.4f}"
+                    if "macro_f1" in train_metrics
+                    else "N/A"
+                ),
+            }
+        )
+
 
 def save_json(data, path):
     with open(path, "w") as f:
         json.dump(data, f, indent=4)
-        
+
+
+def compute_class_weights_from_directory(train_dir, class_names):
+    counts = []
+
+    for class_name in class_names:
+        class_dir = os.path.join(train_dir, class_name)
+        count = len([
+            f for f in os.listdir(class_dir)
+            if os.path.isfile(os.path.join(class_dir, f))
+        ])
+        counts.append(count)
+
+    counts = np.array(counts, dtype=np.float32)
+    total = np.sum(counts)
+    num_classes = len(class_names)
+
+    class_weights = total / (num_classes * counts)
+
+    print("\nClass weights:")
+    for idx, (name, count, weight) in enumerate(zip(class_names, counts, class_weights)):
+        print(f"{idx:02d} {name}: count={int(count)}, weight={weight:.4f}")
+
+    return tf.constant(class_weights, dtype=tf.float32)
+
 def train_worker():
     config = {
         "train_dir": "src/data/train",
         "val_dir": "src/data/val",
         "test_dir": "src/data/test",
-
-        "model_name": "efficientnet_b0",
+        # Dataset/image config
         "image_size": 224,
         "image_channels": 3,
-        "batch_size": 32,
-
-        "epochs": 50,
-
+        "input_size": (224, 224),
+        "input_shape": (224, 224, 3),
+        "batch_size": 16,
+        # Model config
+        "model_name": "efficientnet_b0",
         "pretrained": True,
-        "dropout": 0.4,
+        "weights": "imagenet",  # use None kalau tidak mau pretrained
         "freeze_backbone": True,
+        "trainable": False,  # False karena freeze_backbone=True
+        "dropout": 0.3,
         "hidden_dim": 512,
-
-        "loss_name": "focal_loss",
-
-        "output_dir": "outputs",
-        "log_dir": "logs",
-
-        "seed": 42,
-
-        # Untuk RTX GPU, mixed precision biasanya membantu.
-        # Kalau muncul error numerik / loss NaN, ubah ke False.
-        "use_mixed_precision": True,
-
-        "early_stopping_patience": 10,
+        # Training config
+        "epochs": 50,
+        "loss_name": "cross_entropy",
         "learning_rate": 1e-4,
         "min_learning_rate": 1e-7,
         "lr_factor": 0.3,
-        "lr_patience": 2,
+        "lr_patience": 3,
+        "early_stopping_patience": 10,
+        # Output/logging
+        "output_dir": "outputs",
+        "log_dir": "logs",
+        # Runtime
+        "seed": 42,
+        "use_mixed_precision": False,
     }
-     
     tf.random.set_seed(seed=config["seed"])
-    
-    setup_gpu(
-        use_mixed_precision=config["use_mixed_precision"]
-    )
-    
-    
+
+    setup_gpu(use_mixed_precision=config["use_mixed_precision"])
+
     os.makedirs(config["output_dir"], exist_ok=True)
     os.makedirs(config["log_dir"], exist_ok=True)
-    
+
     print("\n loading datasets")
-    
+
     train_ds, val_ds, test_ds, class_names, num_classes = build_datasets(config)
-    
+    class_weights = compute_class_weights_from_directory(
+        config["train_dir"],
+        class_names,
+    )
     print(f"Class names: {class_names}")
     print(f"Number of classes: {num_classes}")
 
     print("\nBuilding model...")
-    
+
     model = build_model(
         model_name=config["model_name"],
         num_classes=num_classes,
@@ -138,10 +193,8 @@ def train_worker():
         hidden_dim=config["hidden_dim"],
     )
     loss_fn = get_loss(config["loss_name"])
-
-    optimizer = tf.keras.optimizers.Adam(
-        learning_rate=config["learning_rate"]
-    )
+    
+    optimizer = tf.keras.optimizers.Adam(learning_rate=config["learning_rate"])
 
     lr_scheduler = ManualReduceLROnPlateau(
         optimizer=optimizer,
@@ -154,79 +207,70 @@ def train_worker():
         verbose=True,
     )
 
-    train_metrics = create_train_metrics(num_classes)
-    val_metrics = create_val_metrics(num_classes)
+    with tf.device("/CPU:0"):
+        train_metrics = create_train_metrics(num_classes)
+        val_metrics = create_val_metrics(num_classes)
 
-    writer, tensorboard_log_dir = create_tensorboard_writer(
-        log_dir=config["log_dir"]
-    )
+    writer, tensorboard_log_dir = create_tensorboard_writer(log_dir=config["log_dir"])
 
     print(f"TensorBoard log dir: {tensorboard_log_dir}")
 
     best_val_macro_f1 = 0.0
-    patience_counter = 0
+    counter = 0
 
-    best_model_path = os.path.join(
-        config["output_dir"],
-        "best_model.keras"
-    )
+    best_model_path = os.path.join(config["output_dir"], "best_model.keras")
 
-    final_model_path = os.path.join(
-        config["output_dir"],
-        "final_model.keras"
-    )
+    final_model_path = os.path.join(config["output_dir"], "final_model.keras")
 
     history = []
 
-    save_json(
-        class_names,
-        os.path.join(config["output_dir"], "class_names.json")
-    )
+    save_json(class_names, os.path.join(config["output_dir"], "class_names.json"))
 
-    save_json(
-        config,
-        os.path.join(config["output_dir"], "config.json")
-    )
+    save_json(config, os.path.join(config["output_dir"], "config.json"))
 
     print("\nStart training...")
-    
+
     for epoch in range(1, config["epochs"] + 1):
-        reset_metrics(train_metrics)
-        reset_metrics(val_metrics)
-        
+        with tf.device("/CPU:0"):
+            reset_metrics(train_metrics)
+            reset_metrics(val_metrics)
+
         print(f"\nEpoch {epoch}/{config['epochs']}")
-        
+
         train_one_epoch(
-            model=model, 
-            train_ds=train_ds, 
+            model=model,
+            train_ds=train_ds,
             loss_fn=loss_fn,
             optimizer=optimizer,
-            train_metrics=train_metrics
+            train_metrics=train_metrics,
+            epoch=epoch,
+            total_epochs=config["epochs"],
+            class_weights=class_weights,
         )
-        
+
         validate_one_epoch(
             model=model,
             val_ds=val_ds,
-            loss_fn=loss_fn, 
+            loss_fn=loss_fn,
             val_metrics=val_metrics,
+            epoch=epoch,
+            total_epochs=config["epochs"],
         )
-        
+
         train_results = get_metric_results(train_metrics)
         val_results = get_metric_results(val_metrics)
 
         lr_scheduler.step(val_results["loss"])
 
-        learning_rate = float(
-            tf.keras.backend.get_value(optimizer.learning_rate)
-        )
-        
+        learning_rate = float(tf.keras.backend.get_value(optimizer.learning_rate))
+
         write_epoch_logs(
             writer=writer,
             epoch=epoch,
             train_results=train_results,
-            val_results=val_results, 
-            learning_rate=learning_rate
-        ) 
+            val_results=val_results,
+            learning_rate=learning_rate,
+        )
         epoch_log = {
             "epoch": epoch,
             "train_loss": train_results["loss"],
@@ -239,7 +283,7 @@ def train_worker():
             "val_macro_f1": val_results.get("macro_f1", None),
             "learning_rate": learning_rate,
         }
-        
+
         history.append(epoch_log)
         print(
             f"train_loss: {train_results['loss']:.4f} | "
@@ -250,14 +294,14 @@ def train_worker():
             f"val_acc: {val_results['accuracy']:.4f} | "
             f"val_mae: {val_results['mae']:.4f} | "
             f"val_f1: {val_results.get('macro_f1', 0.0):.4f}"
-        )       
-        
+        )
+
         current_val_macro_f1 = val_results.get("macro_f1", 0.0)
-        
+
         if current_val_macro_f1 > best_val_macro_f1:
             best_val_macro_f1 = current_val_macro_f1
             counter = 0
-            
+
             model.save(best_model_path)
             print(
                 f"Best model saved to {best_model_path} "
@@ -267,14 +311,11 @@ def train_worker():
             counter += 1
             print(
                 f"No improvement. "
-                f"Patience: {patience_counter}/{config['early_stopping_patience']}"
+                f"Patience: {counter}/{config['early_stopping_patience']}"
             )
-        save_json(
-            history,
-            os.path.join(config["output_dir"], "training_history.json")
-        )
+        save_json(history, os.path.join(config["output_dir"], "training_history.json"))
 
-        if patience_counter >= config["early_stopping_patience"]:
+        if counter >= config["early_stopping_patience"]:
             print("\nEarly stopping triggered.")
             break
 

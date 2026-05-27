@@ -1,15 +1,21 @@
 import tensorflow as tf
 import datetime
-import os 
+import os
 
 
 def create_tensorboard_writer(log_dir="logs"):
     curr_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     run_log_dir = os.path.join(log_dir, curr_time)
-    
+
     writer = tf.summary.create_file_writer(run_log_dir)
-    
+
+    # Tulis debug scalar supaya TensorBoard langsung aktif
+    with writer.as_default():
+        tf.summary.scalar("debug/start", 1.0, step=0)
+        writer.flush()
+
     return writer, run_log_dir
+
 
 def write_epoch_logs(
     writer,
@@ -21,7 +27,6 @@ def write_epoch_logs(
     """
     Menulis metric training dan validation ke TensorBoard.
     """
-
     with writer.as_default():
         tf.summary.scalar(
             "Loss/train",
@@ -59,14 +64,14 @@ def write_epoch_logs(
             step=epoch,
         )
 
-        if "macro_f1" in train_results:
+        if "macro_f1" in train_results and train_results["macro_f1"] is not None:
             tf.summary.scalar(
                 "Macro_F1/train",
                 train_results["macro_f1"],
                 step=epoch,
             )
 
-        if "macro_f1" in val_results:
+        if "macro_f1" in val_results and val_results["macro_f1"] is not None:
             tf.summary.scalar(
                 "Macro_F1/validation",
                 val_results["macro_f1"],

@@ -1,9 +1,11 @@
 import tensorflow as tf
 
-
 class CategoricalFocalLoss(tf.keras.losses.Loss):
-    def __init__(self, gamma=2.0, alpha=0.25, name:str = "categorical_focal_loss"):
-        super().__init__(name=name)
+    def __init__(self, gamma=2.0, alpha=1.0, name="focal_loss"):
+        super().__init__(
+            name=name,
+            reduction=tf.keras.losses.Reduction.NONE,
+        )
         self.gamma = gamma
         self.alpha = alpha
     
@@ -15,6 +17,7 @@ class CategoricalFocalLoss(tf.keras.losses.Loss):
         
         loss = focal_weight * cross_entropy
         return tf.reduce_mean(tf.reduce_sum(loss, axis=-1))
+    
     def get_config(self):
         config = super().get_config()
         config.update({
@@ -22,6 +25,7 @@ class CategoricalFocalLoss(tf.keras.losses.Loss):
             "alpha": self.alpha,
         })
         return config
+    
 def get_loss(loss_name:str = "focal_loss"):
     loss_name = loss_name.lower()
     if loss_name == "focal_loss":

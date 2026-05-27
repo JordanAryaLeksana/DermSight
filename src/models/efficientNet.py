@@ -71,14 +71,26 @@ class EfficientNetSkinClassifier(tf.keras.Model):
 
         self.backbone.trainable = not freeze_backbone
 
+        self.data_augmentation = tf.keras.Sequential(
+            [
+                layers.RandomFlip("horizontal", name="aug_flip"),
+                layers.RandomRotation(0.05, name="aug_rotation"),
+                layers.RandomZoom(0.10, name="aug_zoom"),
+                layers.RandomContrast(0.10, name="aug_contrast"),
+            ],
+            name="data_augmentation",
+        )
+
         self.pool = layers.GlobalAveragePooling2D(name="global_average_pooling")
 
         self.shared_fc = tf.keras.Sequential(
             [
-                layers.Dense(hidden_dim, name="shared_dense"),
-                layers.LayerNormalization(name="shared_layer_norm"),
-                layers.Activation("relu", name="shared_relu"),
-                layers.Dropout(dropout, name="shared_dropout"),
+                layers.BatchNormalization(name="shared_bn_1"),
+                layers.Dropout(dropout, name="shared_dropout_1"),
+
+                layers.Dense(hidden_dim, activation="relu", name="shared_dense"),
+                layers.BatchNormalization(name="shared_bn_2"),
+                layers.Dropout(0.3, name="shared_dropout_2"),
             ],
             name="shared_fc",
         )
@@ -88,14 +100,16 @@ class EfficientNetSkinClassifier(tf.keras.Model):
                 layers.Dense(
                     num_classes,
                     activation="softmax",
+                    dtype="float32",
                     name="classification_logits",
                 )
             ],
             name="classification_head",
         )
-
     def extract_features(self, x, training=False):
-
+        
+        if training:
+            x = self.data_augmentation(x, training=training)
         if self.channel_adapter is not None:
             x = self.channel_adapter(x)
 

@@ -5,6 +5,8 @@ from .metrics import get_metric_results, create_val_metrics, create_train_metric
 from .tensorboard_utils import create_tensorboard_writer, write_epoch_logs
 from .validate import validate_one_epoch, evaluate_dataset
 from .lr_scheduler import ManualReduceLROnPlateau
+from .training import train_worker
+from .test import test_worker
 __all__ = [
     "get_data_augmentation",
     "preprocess_train",
@@ -20,5 +22,7 @@ __all__ = [
     "write_epoch_loss",
     "validate_one_epoch", 
     "evaluate_dataset",
-    "ManualReduceLROnPlateau"
+    "ManualReduceLROnPlateau",
+    "train_worker",
+    "test_worker"
 ]
