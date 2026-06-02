@@ -74,9 +74,10 @@ class EfficientNetSkinClassifier(tf.keras.Model):
         self.data_augmentation = tf.keras.Sequential(
             [
                 layers.RandomFlip("horizontal", name="aug_flip"),
-                layers.RandomRotation(0.05, name="aug_rotation"),
+                layers.RandomRotation(0.06, name="aug_rotation"),
                 layers.RandomZoom(0.10, name="aug_zoom"),
-                layers.RandomContrast(0.10, name="aug_contrast"),
+                layers.RandomTranslation(0.05, 0.05, name="aug_translation"),
+                layers.RandomContrast(0.12, name="aug_contrast"),
             ],
             name="data_augmentation",
         )
@@ -101,10 +102,9 @@ class EfficientNetSkinClassifier(tf.keras.Model):
                     num_classes,
                     activation="softmax",
                     dtype="float32",
-                    name="classification_logits",
+                  
                 )
             ],
-            name="classification_head",
         )
     def extract_features(self, x, training=False):
         

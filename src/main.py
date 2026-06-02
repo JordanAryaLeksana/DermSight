@@ -69,12 +69,6 @@ def main():
         train_worker()
         test_worker()
 
-    elif args.mode == "tensorboard":
-        run_tensorboard(
-            log_dir=args.log_dir,
-            port=args.port,
-        )
-
     else:
         raise ValueError(f"Unsupported mode: {args.mode}")
 

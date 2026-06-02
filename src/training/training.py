@@ -12,6 +12,7 @@ from src.training.metrics import (
     reset_metrics,
     get_metric_results,
 )
+
 from src.training.validate import validate_one_epoch
 from src.training.tensorboard_utils import (
     create_tensorboard_writer,
@@ -106,28 +107,7 @@ def save_json(data, path):
         json.dump(data, f, indent=4)
 
 
-def compute_class_weights_from_directory(train_dir, class_names):
-    counts = []
 
-    for class_name in class_names:
-        class_dir = os.path.join(train_dir, class_name)
-        count = len([
-            f for f in os.listdir(class_dir)
-            if os.path.isfile(os.path.join(class_dir, f))
-        ])
-        counts.append(count)
-
-    counts = np.array(counts, dtype=np.float32)
-    total = np.sum(counts)
-    num_classes = len(class_names)
-
-    class_weights = total / (num_classes * counts)
-
-    print("\nClass weights:")
-    for idx, (name, count, weight) in enumerate(zip(class_names, counts, class_weights)):
-        print(f"{idx:02d} {name}: count={int(count)}, weight={weight:.4f}")
-
-    return tf.constant(class_weights, dtype=tf.float32)
 
 def train_worker():
     config = {
@@ -141,24 +121,24 @@ def train_worker():
         "input_shape": (224, 224, 3),
         "batch_size": 16,
         # Model config
-        "model_name": "efficientnet_b0",
+        "model_name": "efficientnet_b1",
         "pretrained": True,
         "weights": "imagenet",  # use None kalau tidak mau pretrained
-        "freeze_backbone": True,
+        "freeze_backbone": False,
         "trainable": False,  # False karena freeze_backbone=True
-        "dropout": 0.3,
+        "dropout": 0.4,
         "hidden_dim": 512,
         # Training config
         "epochs": 50,
         "loss_name": "cross_entropy",
-        "learning_rate": 1e-4,
+        "learning_rate": 1e-5,
         "min_learning_rate": 1e-7,
         "lr_factor": 0.3,
         "lr_patience": 3,
         "early_stopping_patience": 10,
         # Output/logging
-        "output_dir": "outputs",
-        "log_dir": "logs",
+        "output_dir": "src/outputs",
+        "log_dir": "src/logs",
         # Runtime
         "seed": 42,
         "use_mixed_precision": False,
@@ -172,11 +152,12 @@ def train_worker():
 
     print("\n loading datasets")
 
-    train_ds, val_ds, test_ds, class_names, num_classes = build_datasets(config)
-    class_weights = compute_class_weights_from_directory(
-        config["train_dir"],
-        class_names,
-    )
+    train_ds, val_ds, test_ds, class_names, num_classes, class_weight, class_counts = build_datasets(config)
+    
+    # class_weights = compute_class_weights_from_directory(
+    #     config["train_dir"],
+    #     class_names,
+    # )
     print(f"Class names: {class_names}")
     print(f"Number of classes: {num_classes}")
 
@@ -218,9 +199,9 @@ def train_worker():
     best_val_macro_f1 = 0.0
     counter = 0
 
-    best_model_path = os.path.join(config["output_dir"], "best_model.keras")
+    best_model_path = os.path.join(config["output_dir"], "best_model.weights.h5")
 
-    final_model_path = os.path.join(config["output_dir"], "final_model.keras")
+    final_model_path = os.path.join(config["output_dir"], "final_model.weights.h5")
 
     history = []
 
@@ -245,7 +226,7 @@ def train_worker():
             train_metrics=train_metrics,
             epoch=epoch,
             total_epochs=config["epochs"],
-            class_weights=class_weights,
+            class_weights=class_weight,
         )
 
         validate_one_epoch(
@@ -302,7 +283,7 @@ def train_worker():
             best_val_macro_f1 = current_val_macro_f1
             counter = 0
 
-            model.save(best_model_path)
+            model.save_weights(best_model_path)
             print(
                 f"Best model saved to {best_model_path} "
                 f"with val_macro_f1: {best_val_macro_f1:.4f}"
@@ -319,7 +300,7 @@ def train_worker():
             print("\nEarly stopping triggered.")
             break
 
-    model.save(final_model_path)
+    model.save_weights(final_model_path)
 
     print("\nTraining finished.")
     print(f"Best validation macro F1: {best_val_macro_f1:.4f}")

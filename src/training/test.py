@@ -1,16 +1,19 @@
 # src/training/test.py
 
-import os
-import json
 import csv
+import json
+from pathlib import Path
+
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 from sklearn.metrics import (
     classification_report,
     confusion_matrix,
 )
 
+from models.efficientNet import EfficientNetSkinClassifier
 from src.training.loader import build_datasets
 from src.training.losses import get_loss
 from src.training.metrics import (
@@ -21,21 +24,23 @@ from src.training.metrics import (
 from src.training.validate import evaluate_dataset
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
+
+
 def load_json(path):
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def save_json(data, path):
-    with open(path, "w") as f:
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
 
 
 def setup_gpu():
-    """
-    Setup GPU agar TensorFlow tidak langsung mengambil semua VRAM.
-    """
-
     gpus = tf.config.list_physical_devices("GPU")
 
     if gpus:
@@ -51,10 +56,6 @@ def setup_gpu():
 
 
 def collect_predictions(model, test_ds, class_names):
-    """
-    Mengumpulkan y_true, y_pred, confidence, dan probability dari test set.
-    """
-
     y_true_indices = []
     y_pred_indices = []
     confidences = []
@@ -87,16 +88,14 @@ def collect_predictions(model, test_ds, class_names):
 
 
 def save_predictions_csv(prediction_data, class_names, output_path):
-    """
-    Menyimpan hasil prediksi ke CSV.
-    """
-
     y_true_labels = prediction_data["y_true_labels"]
     y_pred_labels = prediction_data["y_pred_labels"]
     confidences = prediction_data["confidences"]
     probabilities = prediction_data["probabilities"]
 
-    with open(output_path, mode="w", newline="") as f:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(output_path, mode="w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
 
         header = [
@@ -125,45 +124,137 @@ def save_predictions_csv(prediction_data, class_names, output_path):
             writer.writerow(row)
 
 
-def save_confusion_matrix_csv(cm, class_names, output_path):
-    """
-    Menyimpan confusion matrix dalam bentuk CSV.
-    """
+def save_confusion_matrix_image(cm, class_names, output_path, normalize=False):
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, mode="w", newline="") as f:
-        writer = csv.writer(f)
+    if normalize:
+        cm_to_plot = cm.astype("float") / cm.sum(axis=1, keepdims=True)
+        cm_to_plot = np.nan_to_num(cm_to_plot)
+        title = "Normalized Confusion Matrix"
+        fmt = ".2f"
+    else:
+        cm_to_plot = cm
+        title = "Confusion Matrix"
+        fmt = "d"
 
-        writer.writerow(["true/pred"] + class_names)
+    fig, ax = plt.subplots(figsize=(18, 16))
 
-        for class_name, row in zip(class_names, cm):
-            writer.writerow([class_name] + row.tolist())
+    im = ax.imshow(cm_to_plot, interpolation="nearest")
+    ax.figure.colorbar(im, ax=ax)
+
+    ax.set(
+        xticks=np.arange(len(class_names)),
+        yticks=np.arange(len(class_names)),
+        xticklabels=class_names,
+        yticklabels=class_names,
+        ylabel="True Label",
+        xlabel="Predicted Label",
+        title=title,
+    )
+
+    plt.setp(
+        ax.get_xticklabels(),
+        rotation=45,
+        ha="right",
+        rotation_mode="anchor",
+    )
+
+    threshold = cm_to_plot.max() / 2.0 if cm_to_plot.size else 0
+
+    for i in range(cm_to_plot.shape[0]):
+        for j in range(cm_to_plot.shape[1]):
+            value = cm_to_plot[i, j]
+
+            if normalize:
+                text_value = format(value, fmt)
+            else:
+                text_value = format(int(value), fmt)
+
+            ax.text(
+                j,
+                i,
+                text_value,
+                ha="center",
+                va="center",
+                fontsize=7,
+                color="white" if value > threshold else "black",
+            )
+
+    fig.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+
+def save_class_f1_bar_image(report, class_names, output_path):
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    f1_scores = []
+
+    for class_name in class_names:
+        f1_scores.append(report[class_name]["f1-score"])
+
+    sorted_items = sorted(
+        zip(class_names, f1_scores),
+        key=lambda x: x[1],
+    )
+
+    sorted_class_names = [item[0] for item in sorted_items]
+    sorted_f1_scores = [item[1] for item in sorted_items]
+
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    ax.barh(sorted_class_names, sorted_f1_scores)
+
+    ax.set_xlabel("F1-score")
+    ax.set_ylabel("Class")
+    ax.set_title("F1-score per Class")
+    ax.set_xlim(0, 1)
+
+    for i, score in enumerate(sorted_f1_scores):
+        ax.text(
+            score + 0.01,
+            i,
+            f"{score:.3f}",
+            va="center",
+            fontsize=8,
+        )
+
+    fig.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
 
 
 def test_worker():
     setup_gpu()
 
-    output_dir = "outputs"
+    output_dir = OUTPUT_DIR
 
-    config_path = os.path.join(output_dir, "config.json")
-    class_names_path = os.path.join(output_dir, "class_names.json")
-    best_model_path = os.path.join(output_dir, "best_model.keras")
+    config_path = output_dir / "config.json"
+    class_names_path = output_dir / "class_names.json"
+    best_model_path = output_dir / "final_model.weights.h5"
 
-    if not os.path.exists(config_path):
+    print(f"Project root : {PROJECT_ROOT}")
+    print(f"Output dir   : {output_dir}")
+    print(f"Config path  : {config_path}")
+    print(f"Class path   : {class_names_path}")
+    print(f"Model path   : {best_model_path}")
+
+    if not config_path.exists():
         raise FileNotFoundError(
             f"Config file tidak ditemukan: {config_path}. "
             "Pastikan training.py sudah dijalankan."
         )
 
-    if not os.path.exists(class_names_path):
+    if not class_names_path.exists():
         raise FileNotFoundError(
             f"Class names file tidak ditemukan: {class_names_path}. "
             "Pastikan training.py sudah menyimpan class_names.json."
         )
 
-    if not os.path.exists(best_model_path):
+    if not best_model_path.exists():
         raise FileNotFoundError(
             f"Best model tidak ditemukan: {best_model_path}. "
-            "Pastikan training.py sudah menghasilkan best_model.keras."
+            "Pastikan training.py sudah menghasilkan final_model.weights.h5."
         )
 
     config = load_json(config_path)
@@ -172,14 +263,35 @@ def test_worker():
 
     print("Loading test dataset...")
 
-    _, _, test_ds, _, _ = build_datasets(config)
+    datasets = build_datasets(config)
+    test_ds = datasets[2]
 
-    print("Loading best model...")
+    print("Loading model weights...")
 
-    model = tf.keras.models.load_model(
-        best_model_path,
-        compile=False
+    model = EfficientNetSkinClassifier(
+        num_classes=num_classes,
+        backbone=config.get("model_name", "efficientnet_b0"),
+        image_channels=config.get("image_channels", 3),
+        input_size=config.get("image_size", 224),
+        pretrained=False,
+        dropout=config.get("dropout", 0.3),
+        freeze_backbone=config.get("freeze_backbone", False),
+        hidden_dim=config.get("hidden_dim", 512),
     )
+
+    dummy_input = tf.zeros(
+        (
+            1,
+            config.get("image_size", 224),
+            config.get("image_size", 224),
+            config.get("image_channels", 3),
+        ),
+        dtype=tf.float32,
+    )
+
+    _ = model(dummy_input, training=False)
+
+    model.load_weights(best_model_path)
 
     loss_fn = get_loss(config.get("loss_name", "focal_loss"))
 
@@ -236,19 +348,21 @@ def test_worker():
     cm = confusion_matrix(
         y_true,
         y_pred,
-        labels=list(range(num_classes))
+        labels=list(range(num_classes)),
     )
 
-    test_results_path = os.path.join(output_dir, "test_metrics.json")
-    report_json_path = os.path.join(output_dir, "classification_report.json")
-    report_txt_path = os.path.join(output_dir, "classification_report.txt")
-    predictions_csv_path = os.path.join(output_dir, "test_predictions.csv")
-    confusion_matrix_csv_path = os.path.join(output_dir, "confusion_matrix.csv")
+    test_results_path = output_dir / "test_metrics.json"
+    report_json_path = output_dir / "classification_report.json"
+    report_txt_path = output_dir / "classification_report.txt"
+    predictions_csv_path = output_dir / "test_predictions.csv"
+    confusion_matrix_png_path = output_dir / "confusion_matrix.png"
+    confusion_matrix_norm_png_path = output_dir / "confusion_matrix_normalized.png"
+    class_f1_png_path = output_dir / "class_f1_score.png"
 
     save_json(test_results, test_results_path)
     save_json(report, report_json_path)
 
-    with open(report_txt_path, "w") as f:
+    with open(report_txt_path, "w", encoding="utf-8") as f:
         f.write(report_text)
 
     save_predictions_csv(
@@ -257,10 +371,24 @@ def test_worker():
         output_path=predictions_csv_path,
     )
 
-    save_confusion_matrix_csv(
+    save_confusion_matrix_image(
         cm=cm,
         class_names=class_names,
-        output_path=confusion_matrix_csv_path,
+        output_path=confusion_matrix_png_path,
+        normalize=False,
+    )
+
+    save_confusion_matrix_image(
+        cm=cm,
+        class_names=class_names,
+        output_path=confusion_matrix_norm_png_path,
+        normalize=True,
+    )
+
+    save_class_f1_bar_image(
+        report=report,
+        class_names=class_names,
+        output_path=class_f1_png_path,
     )
 
     print("\nClassification Report:")
@@ -271,7 +399,9 @@ def test_worker():
     print(f"- {report_json_path}")
     print(f"- {report_txt_path}")
     print(f"- {predictions_csv_path}")
-    print(f"- {confusion_matrix_csv_path}")
+    print(f"- {confusion_matrix_png_path}")
+    print(f"- {confusion_matrix_norm_png_path}")
+    print(f"- {class_f1_png_path}")
 
     print("\nTarget Check:")
 
