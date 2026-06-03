@@ -119,13 +119,13 @@ def train_worker():
         "image_channels": 3,
         "input_size": (224, 224),
         "input_shape": (224, 224, 3),
-        "batch_size": 16,
+        "batch_size": 8,
         # Model config
-        "model_name": "efficientnet_b1",
+        "model_name": "efficientnet_b2",
         "pretrained": True,
         "weights": "imagenet",  # use None kalau tidak mau pretrained
         "freeze_backbone": False,
-        "trainable": False,  # False karena freeze_backbone=True
+        "trainable": False, 
         "dropout": 0.4,
         "hidden_dim": 512,
         # Training config

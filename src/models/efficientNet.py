@@ -13,9 +13,9 @@ class EfficientNetSkinClassifier(tf.keras.Model):
 
     DEFAULT_INPUT_SIZES = {
         "efficientnet_b0": 224,
-        "efficientnet_b1": 240,
-        "efficientnet_b2": 260,
-        "efficientnet_b3": 300,
+        "efficientnet_b1": 224,
+        "efficientnet_b2": 224,
+        "efficientnet_b3": 224,
     }
 
     def __init__(
@@ -158,7 +158,6 @@ def build_efficientnet_classifier(
     hidden_dim: int = 512,
 ) -> tf.keras.Model:
 
-
     model = EfficientNetSkinClassifier(
         num_classes=num_classes,
         backbone=backbone,
@@ -170,7 +169,11 @@ def build_efficientnet_classifier(
         hidden_dim=hidden_dim,
     )
 
-    model.build(input_shape=(None, input_size, input_size, image_channels))
+    dummy_input = tf.zeros(
+        (1, input_size, input_size, image_channels),
+        dtype=tf.float32,
+    )
+    _ = model(dummy_input, training=False)
 
     return model
 

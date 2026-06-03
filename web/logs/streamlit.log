@@ -52,3 +52,76 @@ Traceback (most recent call last):
   File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 120, in call_analyze_api
     raise RuntimeError(f"API error {response.status_code}: {detail}")
 RuntimeError: API error 500: Internal Server Error
+2026-06-03 19:16:38 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:158 | Predict API failed | status_code=500 | detail=Internal Server Error
+2026-06-03 19:16:38 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:460 | Analysis failed
+Traceback (most recent call last):
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 410, in <module>
+    prediction = call_predict_api(
+                 ^^^^^^^^^^^^^^^^^
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 164, in call_predict_api
+    raise RuntimeError(f"API error {response.status_code}: {detail}")
+RuntimeError: API error 500: Internal Server Error
+2026-06-03 19:22:37 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:114 | Analyze API failed | status_code=500 | detail=Internal Server Error
+2026-06-03 19:22:37 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:460 | Analysis failed
+Traceback (most recent call last):
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 383, in <module>
+    result = call_analyze_api(
+             ^^^^^^^^^^^^^^^^^
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 120, in call_analyze_api
+    raise RuntimeError(f"API error {response.status_code}: {detail}")
+RuntimeError: API error 500: Internal Server Error
+2026-06-03 19:23:54 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:114 | Analyze API failed | status_code=500 | detail=Internal Server Error
+2026-06-03 19:23:54 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:460 | Analysis failed
+Traceback (most recent call last):
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 383, in <module>
+    result = call_analyze_api(
+             ^^^^^^^^^^^^^^^^^
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 120, in call_analyze_api
+    raise RuntimeError(f"API error {response.status_code}: {detail}")
+RuntimeError: API error 500: Internal Server Error
+2026-06-03 19:23:57 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:114 | Analyze API failed | status_code=500 | detail=Internal Server Error
+2026-06-03 19:23:57 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:460 | Analysis failed
+Traceback (most recent call last):
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 383, in <module>
+    result = call_analyze_api(
+             ^^^^^^^^^^^^^^^^^
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 120, in call_analyze_api
+    raise RuntimeError(f"API error {response.status_code}: {detail}")
+RuntimeError: API error 500: Internal Server Error
+2026-06-03 19:26:53 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:114 | Analyze API failed | status_code=500 | detail=Internal Server Error
+2026-06-03 19:26:53 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:460 | Analysis failed
+Traceback (most recent call last):
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 383, in <module>
+    result = call_analyze_api(
+             ^^^^^^^^^^^^^^^^^
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 120, in call_analyze_api
+    raise RuntimeError(f"API error {response.status_code}: {detail}")
+RuntimeError: API error 500: Internal Server Error
+2026-06-03 19:37:33 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:114 | Analyze API failed | status_code=500 | detail=Internal Server Error
+2026-06-03 19:37:33 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:460 | Analysis failed
+Traceback (most recent call last):
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 383, in <module>
+    result = call_analyze_api(
+             ^^^^^^^^^^^^^^^^^
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 120, in call_analyze_api
+    raise RuntimeError(f"API error {response.status_code}: {detail}")
+RuntimeError: API error 500: Internal Server Error
+2026-06-03 19:41:18 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:114 | Analyze API failed | status_code=500 | detail=Internal Server Error
+2026-06-03 19:41:18 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:460 | Analysis failed
+Traceback (most recent call last):
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 383, in <module>
+    result = call_analyze_api(
+             ^^^^^^^^^^^^^^^^^
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 120, in call_analyze_api
+    raise RuntimeError(f"API error {response.status_code}: {detail}")
+RuntimeError: API error 500: Internal Server Error
+2026-06-03 19:42:00 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:114 | Analyze API failed | status_code=500 | detail=Internal Server Error
+2026-06-03 19:42:01 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:114 | Analyze API failed | status_code=500 | detail=Internal Server Error
+2026-06-03 19:42:01 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:460 | Analysis failed
+Traceback (most recent call last):
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 383, in <module>
+    result = call_analyze_api(
+             ^^^^^^^^^^^^^^^^^
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 120, in call_analyze_api
+    raise RuntimeError(f"API error {response.status_code}: {detail}")
+RuntimeError: API error 500: Internal Server Error

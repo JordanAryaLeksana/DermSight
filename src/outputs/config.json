@@ -13,8 +13,8 @@
         224,
         3
     ],
-    "batch_size": 16,
-    "model_name": "efficientnet_b1",
+    "batch_size": 8,
+    "model_name": "efficientnet_b2",
     "pretrained": true,
     "weights": "imagenet",
     "freeze_backbone": false,

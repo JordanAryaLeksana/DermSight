@@ -17,18 +17,23 @@ def get_skin_predictor() -> SkinDiseasePredictor:
     if _skin_predictor is None:
         model_path = os.getenv(
             "SKIN_MODEL_PATH",
-            "outputs/final_model.weights.h5",
+            "src/outputs/best_model.weights.h5",
         )
 
         class_names_path = os.getenv(
             "CLASS_NAMES_PATH",
-            "outputs/class_names.json",
+            "src/outputs/class_names.json",
+        )
+
+        config_path = os.getenv(
+            "MODEL_CONFIG_PATH",
+            "src/outputs/config.json",
         )
 
         _skin_predictor = SkinDiseasePredictor(
             model_path=model_path,
             class_names_path=class_names_path,
-            image_size=224,
+            config_path=config_path,
         )
 
     return _skin_predictor

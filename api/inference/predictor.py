@@ -1,3 +1,8 @@
+import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
 import io
 import json
 from pathlib import Path
@@ -6,8 +11,14 @@ from typing import Dict, Any
 import numpy as np
 from PIL import Image
 import tensorflow as tf
-from src.models.efficientNet import EfficientNetSkinClassifier
 from tensorflow.keras.applications.efficientnet import preprocess_input
+
+from src.models.modelFactory import build_model
+
+try:
+    tf.config.set_visible_devices([], "GPU")
+except Exception:
+    pass
 
 
 class SkinDiseasePredictor:
@@ -15,41 +26,53 @@ class SkinDiseasePredictor:
         self,
         model_path: str,
         class_names_path: str,
-        image_size: int = 224,
+        config_path: str,
     ):
         self.model_path = Path(model_path)
         self.class_names_path = Path(class_names_path)
-        self.image_size = image_size
+        self.config_path = Path(config_path)
 
         if not self.model_path.exists():
-            raise FileNotFoundError(f"Model file not found: {self.model_path}")
+            raise FileNotFoundError(f"Model weights file not found: {self.model_path}")
 
         if not self.class_names_path.exists():
-            raise FileNotFoundError(f"Class names file not found: {self.class_names_path}")
+            raise FileNotFoundError(
+                f"Class names file not found: {self.class_names_path}"
+            )
+
+        if not self.config_path.exists():
+            raise FileNotFoundError(f"Config file not found: {self.config_path}")
+
+        with open(self.config_path, "r", encoding="utf-8") as f:
+            self.config = json.load(f)
 
         self.class_names = self._load_class_names(self.class_names_path)
 
         if not self.class_names:
             raise ValueError("class_names.json is empty or invalid")
 
-        self.model = EfficientNetSkinClassifier(
+        self.image_size = int(self.config.get("image_size", 224))
+        self.image_channels = int(self.config.get("image_channels", 3))
+
+        self.model = build_model(
+            model_name=self.config.get("model_name", "efficientnet_b2"),
             num_classes=len(self.class_names),
-            backbone="efficientnet_b0",
-            image_channels=3,
+            image_channels=self.image_channels,
             input_size=self.image_size,
-            pretrained=False,
-            dropout=0.3,
-            freeze_backbone=False,
-            hidden_dim=512,
+            pretrained=bool(self.config.get("pretrained", True)),
+            dropout=float(self.config.get("dropout", 0.4)),
+            freeze_backbone=bool(self.config.get("freeze_backbone", False)),
+            hidden_dim=int(self.config.get("hidden_dim", 512)),
         )
 
         dummy_input = tf.zeros(
-            (1, self.image_size, self.image_size, 3),
+            (1, self.image_size, self.image_size, self.image_channels),
             dtype=tf.float32,
         )
         _ = self.model(dummy_input, training=False)
 
-        self.model.load_weights(self.model_path)
+        self.model.load_weights(str(self.model_path))
+        self.model.trainable = False
 
     def _load_class_names(self, path: Path):
         with open(path, "r", encoding="utf-8") as f:
@@ -89,12 +112,8 @@ class SkinDiseasePredictor:
 
         input_tensor = self._preprocess_image(image_bytes)
 
-        predictions = self.model.predict(input_tensor, verbose=0)
-
-        if predictions.ndim != 2:
-            raise ValueError(f"Unexpected model output shape: {predictions.shape}")
-
-        probabilities = predictions[0]
+        predictions = self.model(input_tensor, training=False)
+        probabilities = predictions.numpy()[0]
 
         predicted_index = int(np.argmax(probabilities))
         confidence = float(probabilities[predicted_index])
