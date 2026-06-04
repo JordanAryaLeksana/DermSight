@@ -126,7 +126,7 @@ def train_worker():
         "weights": "imagenet",  # use None kalau tidak mau pretrained
         "freeze_backbone": False,
         "trainable": False, 
-        "dropout": 0.4,
+        "dropout": 0.2,
         "hidden_dim": 512,
         # Training config
         "epochs": 50,
