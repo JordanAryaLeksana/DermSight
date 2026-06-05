@@ -1,0 +1,23 @@
+﻿model_label,disease
+Acne,Acne
+Actinic_Keratosis,Actinic keratosis
+Benign_tumors,Benign skin tumors
+Bullous,Bullous skin diseases
+Candidiasis,Cutaneous candidiasis
+DrugEruption,Drug eruption
+Eczema,Eczema
+Infestations_Bites,Infestations and bites
+Lichen,Lichen skin diseases
+Lupus,Cutaneous lupus
+Moles,Moles / Nevi
+Psoriasis,Psoriasis
+Rosacea,Rosacea
+Seborrh_Keratoses,Seborrheic keratosis
+SkinCancer,Skin cancer
+Sun_Sunlight_Damage,Sun damage
+Tinea,Tinea / Ringworm
+Unknown_Normal,Normal skin
+Vascular_Tumors,Vascular skin tumors
+Vasculitis,Cutaneous vasculitis
+Vitiligo,Vitiligo
+Warts,Warts

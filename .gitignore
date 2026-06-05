@@ -10,7 +10,9 @@ model/saved_model/
 *.pkl
 *.joblib
 
-data/
+src/data/train
 test/
+src/data/test
+src/data/val
 
 .ipynb_checkpoints/

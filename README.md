@@ -33,6 +33,25 @@ Project ini berfokus pada:
 
 ---
 
+## 📦 Dataset
+
+Dataset yang digunakan untuk pengembangan dan pelatihan model DermSight dapat diakses melalui Google Drive berikut:
+
+🔗 **Dataset DermSight:**  
+https://drive.google.com/drive/folders/1kN9GwU4wqlNyizO9kel0mzoCpt4hWTOj?usp=sharing
+
+Dataset ini digunakan untuk melatih model klasifikasi penyakit kulit dengan 22 label. Data gambar dipisahkan ke dalam folder training, validation, dan testing agar proses pelatihan serta evaluasi model dapat dilakukan dengan lebih terstruktur.
+
+> Catatan: Dataset tidak disertakan langsung di repository karena ukuran file cukup besar. Silakan unduh dataset melalui link di atas, lalu letakkan ke dalam folder `src/data/` sesuai struktur project, lalu gunakan main.py untuk memisah data train menjadi train+val.
+
+Contoh struktur dataset:
+
+```text
+src/data/
+├── train/
+└── test/
+
+
 ## 🖼️ User Flow Aplikasi
 
 Alur penggunaan DermSight dibuat sederhana agar mudah digunakan oleh masyarakat umum.
