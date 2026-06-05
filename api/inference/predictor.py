@@ -7,7 +7,7 @@ import io
 import json
 from pathlib import Path
 from typing import Dict, Any
-
+import h5py
 import numpy as np
 from PIL import Image
 import tensorflow as tf
@@ -71,7 +71,22 @@ class SkinDiseasePredictor:
         )
         _ = self.model(dummy_input, training=False)
 
-        self.model.load_weights(str(self.model_path))
+        self.model.load_weights(
+            str(self.model_path),
+            skip_mismatch=True
+        )
+
+        with h5py.File(str(self.model_path), "r") as f:
+            kernel = np.array(
+                f["layers"]["sequential_1"]["layers"]["dense"]["vars"]["0"]
+            )
+            bias = np.array(
+                f["layers"]["sequential_1"]["layers"]["dense"]["vars"]["1"]
+            )
+
+        self.model.classifier_head.layers[0].set_weights(
+            [kernel, bias]
+        )
         self.model.trainable = False
 
     def _load_class_names(self, path: Path):

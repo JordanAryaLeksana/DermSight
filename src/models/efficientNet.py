@@ -102,9 +102,10 @@ class EfficientNetSkinClassifier(tf.keras.Model):
                     num_classes,
                     activation="softmax",
                     dtype="float32",
-                  
+                    name="classifier_dense"
                 )
             ],
+            name="classifier_head"
         )
     def extract_features(self, x, training=False):
         
