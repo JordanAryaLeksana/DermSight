@@ -17,7 +17,7 @@ def get_skin_predictor() -> SkinDiseasePredictor:
     if _skin_predictor is None:
         model_path = os.getenv(
             "SKIN_MODEL_PATH",
-            "src/outputs/best_model.weights.h5",
+            "src/outputs/final_model.weights.h5",
         )
 
         class_names_path = os.getenv(
@@ -45,7 +45,7 @@ def get_recommendation_service() -> SkinRecommendationService:
     if _recommendation_service is None:
         disease_list_path = os.getenv(
             "DISEASE_LIST_PATH",
-            "llm/data/skin_disease_list.csv",
+            "llm/data/skin_knowledge_rag.csv",
         )
 
         retriever = SkinDiseaseRetriever(

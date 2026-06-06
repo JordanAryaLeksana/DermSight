@@ -5,25 +5,23 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-
 SYSTEM_PROMPT = """
-You are a medical education assistant specializing in skin disease information.
+Anda adalah asisten edukasi medis yang berfokus pada informasi penyakit kulit.
 
-Your task is to explain AI-based skin disease classification results in a safe,
-clear, and patient-friendly way.
+Tugas Anda adalah menjelaskan hasil klasifikasi penyakit kulit berbasis AI dengan cara yang aman,
+jelas, dan mudah dipahami oleh pasien.
 
-Rules:
-- Do not provide a definitive medical diagnosis.
-- Always explain that the result comes from an AI image classification model.
-- Use only the disease context provided by the knowledge base.
-- If the context is missing or unavailable, clearly say that the information is limited.
-- Do not recommend prescription medication.
-- Do not provide emergency diagnosis.
-- Recommend consulting a qualified doctor or dermatologist.
-- Use simple language that non-medical users can understand.
-- Be calm, respectful, and reassuring.
+Aturan:
+- Jangan memberikan diagnosis medis yang pasti.
+- Selalu jelaskan bahwa hasil ini berasal dari model klasifikasi gambar berbasis AI.
+- Gunakan hanya konteks penyakit yang diberikan oleh knowledge base.
+- Jika konteks tidak tersedia atau informasinya terbatas, jelaskan dengan jelas bahwa informasi yang tersedia terbatas.
+- Jangan merekomendasikan obat resep.
+- Jangan memberikan diagnosis kondisi darurat.
+- Sarankan pengguna untuk berkonsultasi dengan dokter atau dokter spesialis kulit yang berkualifikasi.
+- Gunakan bahasa sederhana yang mudah dipahami oleh pengguna non-medis.
+- Bersikap tenang, sopan, dan meyakinkan.
 """.strip()
-
 
 def build_skin_disease_prompt(
     predicted_label: str,
@@ -111,49 +109,74 @@ def build_skin_disease_prompt(
     )
 
     user_prompt = f"""
-An AI image classification model produced the following result:
+    Model klasifikasi gambar berbasis AI menghasilkan hasil berikut:
 
-Predicted model label:
-{predicted_label.strip()}
+    Label prediksi dari model:
+    {predicted_label.strip()}
 
-Matched knowledge base label:
-{matched_label_text}
+    Label yang cocok di knowledge base:
+    {matched_label_text}
 
-Disease name:
-{disease_name}
+    Nama penyakit/kondisi:
+    {disease_name}
 
-Model confidence:
-{confidence_percent}%
+    Tingkat keyakinan model:
+    {confidence_percent}%
 
-Match type:
-{match_type_text}
+    Jenis kecocokan:
+    {match_type_text}
 
-Knowledge base context:
-{disease_context}
+    Konteks dari knowledge base:
+    {disease_context}
 
-Generate a user-facing explanation in the following format:
+    Tugas:
+    Buat penjelasan untuk pengguna dalam Bahasa Indonesia.
 
-Possible condition:
-Explain the possible skin condition detected by the AI model.
+    Aturan penting:
+    - Gunakan hanya informasi dari konteks knowledge base.
+    - Jangan memberikan diagnosis pasti.
+    - Jangan merekomendasikan obat resep.
+    - Jangan menambahkan informasi medis di luar konteks.
+    - Jangan mengubah urutan judul.
+    - Jangan menambahkan judul baru.
+    - Gunakan bahasa sederhana dan mudah dipahami.
+    - Jawaban harus konsisten, rapi, dan tidak terlalu panjang.
+    - Setiap bagian maksimal 2 sampai 4 kalimat, kecuali bagian daftar poin.
 
-AI confidence:
-Explain the confidence score in simple terms. Do not overstate certainty.
+    Gunakan format persis seperti di bawah ini:
 
-Simple explanation:
-Explain the condition using simple non-technical language.
+    Kemungkinan kondisi:
+    Jelaskan bahwa model AI mendeteksi kemungkinan kondisi {disease_name}. Jelaskan secara singkat bahwa hasil ini berasal dari analisis gambar oleh AI dan bukan diagnosis pasti.
 
-Common signs:
-List common visible signs or symptoms based only on the provided context.
+    Tingkat keyakinan AI:
+    Jelaskan bahwa tingkat keyakinan model adalah {confidence_percent}%. Terangkan bahwa angka ini menunjukkan keyakinan model terhadap hasil gambar, tetapi belum tentu memastikan kondisi sebenarnya.
 
-Suggested next steps:
-Give safe and practical next steps, such as monitoring symptoms and consulting
-a doctor or dermatologist.
+    Penjelasan sederhana:
+    Jelaskan kondisi ini dengan bahasa awam berdasarkan konteks knowledge base. Buat penjelasan yang mudah dimengerti oleh pengguna non-medis.
 
-Medical disclaimer:
-State clearly that this is not a medical diagnosis and that the user should
-consult a qualified healthcare professional for confirmation.
-""".strip()
+    Tanda-tanda umum:
+    - Sebutkan tanda atau gejala dari konteks knowledge base.
+    - Jangan menambahkan tanda yang tidak disebutkan dalam konteks.
+    - Jika konteks tidak menyebutkan tanda/gejala, tulis: Informasi tanda-tanda umum tidak tersedia dalam knowledge base.
 
+    Langkah yang disarankan:
+    - Amati perubahan pada area kulit.
+    - Jaga kebersihan area kulit.
+    - Hindari menggaruk, memencet, atau mengobati sendiri tanpa arahan tenaga kesehatan.
+    - Konsultasikan dengan dokter atau dokter spesialis kulit untuk pemeriksaan lebih lanjut.
+
+    Hal yang sebaiknya dihindari:
+    - Jangan menyimpulkan diagnosis hanya dari hasil AI.
+    - Jangan menggunakan obat resep tanpa arahan dokter.
+    - Jangan mengabaikan keluhan jika semakin parah atau tidak membaik.
+
+    Kapan perlu ke dokter:
+    Sarankan pengguna berkonsultasi dengan dokter jika keluhan menetap, memburuk, menyebar, terasa nyeri, berdarah, bernanah, sering kambuh, atau mengganggu aktivitas.
+
+    Catatan medis:
+    Hasil ini bukan diagnosis medis. Hasil ini berasal dari model klasifikasi gambar berbasis AI dan perlu dikonfirmasi oleh dokter atau tenaga kesehatan yang berkualifikasi melalui pemeriksaan langsung.
+    """.strip()
+        
     logger.info(
         "Skin disease prompt built successfully | disease=%s | match_type=%s",
         disease_name,

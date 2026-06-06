@@ -1,7 +1,13 @@
-import os
+
 import json
 import numpy as np
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
+import logging
+logger = tf.get_logger()
+logger.setLevel(logging.ERROR) # or logging.INFO, logging.WARNING, etc.
+
 from tqdm import tqdm
 from src.training.loader import build_datasets
 from src.models.modelFactory import build_model
@@ -19,26 +25,27 @@ from src.training.tensorboard_utils import (
     write_epoch_logs,
 )
 from src.training.lr_scheduler import ManualReduceLROnPlateau
+tf.config.threading.set_inter_op_parallelism_threads(4)
+tf.config.threading.set_intra_op_parallelism_threads(4)
 
-
-def setup_gpu(use_mixed_precision: bool = True):
+def setup_gpu():
     gpus = tf.config.list_physical_devices("GPU")
     if gpus:
-        print(f"GPU DETECTED: {gpus}")
+        try:
+            tf.config.set_logical_device_configuration(
+                gpus[0],
+                [
+                    tf.config.LogicalDeviceConfiguration(
+                        memory_limit=6144  # MB
+                    )
+                ],
+            )
 
-        for gpu in gpus:
-            try:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            except Exception as e:
-                print(f"Could not set memory growth: {e}")
-        if use_mixed_precision:
-            try:
-                tf.keras.mixed_precision.set_global_policy("mixed_float16")
-                print("Mixed precision enabled: mixed_float16")
-            except Exception as e:
-                print(f"Could not enable mixed precision: {e}")
-    else:
-        print("No GPU detected. Training will use CPU.")
+            logical_gpus = tf.config.list_logical_devices("GPU")
+            print("Logical GPUs:", logical_gpus)
+
+        except RuntimeError as e:
+            print(e)
 
 
 def train_one_epoch(
@@ -119,7 +126,7 @@ def train_worker():
         "image_channels": 3,
         "input_size": (224, 224),
         "input_shape": (224, 224, 3),
-        "batch_size": 8,
+        "batch_size": 16,
         # Model config
         "model_name": "efficientnet_b2",
         "pretrained": True,
@@ -141,11 +148,11 @@ def train_worker():
         "log_dir": "src/logs",
         # Runtime
         "seed": 42,
-        "use_mixed_precision": False,
+        # "use_mixed_precision": False,
     }
     tf.random.set_seed(seed=config["seed"])
 
-    setup_gpu(use_mixed_precision=config["use_mixed_precision"])
+    # setup_gpu(use_mixed_precision=config["use_mixed_precision"])
 
     os.makedirs(config["output_dir"], exist_ok=True)
     os.makedirs(config["log_dir"], exist_ok=True)
@@ -173,6 +180,7 @@ def train_worker():
         freeze_backbone=config["freeze_backbone"],
         hidden_dim=config["hidden_dim"],
     )
+
     loss_fn = get_loss(config["loss_name"])
     
     optimizer = tf.keras.optimizers.Adam(learning_rate=config["learning_rate"])
@@ -188,9 +196,8 @@ def train_worker():
         verbose=True,
     )
 
-    with tf.device("/CPU:0"):
-        train_metrics = create_train_metrics(num_classes)
-        val_metrics = create_val_metrics(num_classes)
+    train_metrics = create_train_metrics(num_classes)
+    val_metrics = create_val_metrics(num_classes)
 
     writer, tensorboard_log_dir = create_tensorboard_writer(log_dir=config["log_dir"])
 
@@ -212,9 +219,8 @@ def train_worker():
     print("\nStart training...")
 
     for epoch in range(1, config["epochs"] + 1):
-        with tf.device("/CPU:0"):
-            reset_metrics(train_metrics)
-            reset_metrics(val_metrics)
+        reset_metrics(train_metrics)
+        reset_metrics(val_metrics)
 
         print(f"\nEpoch {epoch}/{config['epochs']}")
 

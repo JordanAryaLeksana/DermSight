@@ -13,7 +13,7 @@
         224,
         3
     ],
-    "batch_size": 8,
+    "batch_size": 16,
     "model_name": "efficientnet_b2",
     "pretrained": true,
     "weights": "imagenet",
@@ -30,6 +30,5 @@
     "early_stopping_patience": 10,
     "output_dir": "src/outputs",
     "log_dir": "src/logs",
-    "seed": 42,
-    "use_mixed_precision": false
+    "seed": 42
 }

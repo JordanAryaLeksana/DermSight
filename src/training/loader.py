@@ -44,17 +44,17 @@ def build_class_weight(train_dir, class_names):
     return class_weight_tensor, class_counts
 
 def build_datasets(config):
-    with tf.device("/CPU:0"):
-        train_ds = tf.keras.preprocessing.image_dataset_from_directory(
+
+    train_ds = tf.keras.preprocessing.image_dataset_from_directory(
             config["train_dir"],
             image_size=config["input_size"],
             batch_size=config["batch_size"],
             seed=config["seed"],
             label_mode="categorical",
             shuffle=True,
-        )
+    )
 
-        val_ds = tf.keras.preprocessing.image_dataset_from_directory(
+    val_ds = tf.keras.preprocessing.image_dataset_from_directory(
             config["val_dir"],
             image_size=config["input_size"],
             batch_size=config["batch_size"],
@@ -63,7 +63,7 @@ def build_datasets(config):
             shuffle=False,
         )
 
-        test_ds = tf.keras.preprocessing.image_dataset_from_directory(
+    test_ds = tf.keras.preprocessing.image_dataset_from_directory(
             config["test_dir"],
             image_size=config["input_size"],
             batch_size=config["batch_size"],
@@ -87,10 +87,8 @@ def build_datasets(config):
     val_ds = val_ds.with_options(options)
     test_ds = test_ds.with_options(options)
 
-    AUTOTUNE = tf.data.AUTOTUNE
-
-    train_ds = train_ds.prefetch(AUTOTUNE)
-    val_ds = val_ds.prefetch(AUTOTUNE)
-    test_ds = test_ds.prefetch(AUTOTUNE)
+    train_ds = train_ds.prefetch(tf.data.AUTOTUNE)
+    val_ds = val_ds.prefetch(tf.data.AUTOTUNE)
+    test_ds = test_ds.prefetch(tf.data.AUTOTUNE)
 
     return train_ds, val_ds, test_ds, class_names, num_classes, class_weight, class_counts
