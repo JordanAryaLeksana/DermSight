@@ -57,6 +57,8 @@ class SkinRecommendationService:
             )
             raise ValueError("confidence must be between 0 and 1")
 
+        confidence = float(confidence)
+
         logger.info("Starting retrieval step | label=%s", predicted_label)
 
         retrieval_result = self.retriever.retrieve(predicted_label)
@@ -72,7 +74,7 @@ class SkinRecommendationService:
 
         messages = build_skin_disease_prompt(
             predicted_label=predicted_label,
-            confidence=float(confidence),
+            confidence=confidence,
             retrieval_result=retrieval_result,
         )
 
@@ -92,15 +94,16 @@ class SkinRecommendationService:
 
         result = {
             "predicted_label": predicted_label,
-            "confidence": round(float(confidence), 4),
+            "confidence": round(confidence, 4),
             "retrieval_result": retrieval_result,
             "recommendation": llm_response,
+            "generation_mode": "llm_from_structured_knowledge",
         }
 
         logger.info(
             "Recommendation service completed successfully | label=%s | confidence=%.4f",
             predicted_label,
-            round(float(confidence), 4),
+            round(confidence, 4),
         )
 
         return result

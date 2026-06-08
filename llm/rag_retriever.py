@@ -33,7 +33,16 @@ class SkinDiseaseRetriever:
             logger.exception("Failed to read disease list CSV: %s", self.disease_list)
             raise
 
-        required_columns = {"model_label", "disease", "llm_context"}
+        required_columns = {
+            "model_label",
+            "disease",
+            "simple_explanation",
+            "common_signs",
+            "safe_actions",
+            "avoid",
+            "when_to_seek_help",
+        }
+
         missing_columns = required_columns - set(self.df.columns)
 
         if missing_columns:
@@ -45,9 +54,8 @@ class SkinDiseaseRetriever:
                 f"Missing required columns in disease list CSV: {missing_columns}"
             )
 
-        self.df["model_label"] = self.df["model_label"].astype(str).str.strip()
-        self.df["disease"] = self.df["disease"].astype(str).str.strip()
-        self.df["llm_context"] = self.df["llm_context"].astype(str).str.strip()
+        for col in self.df.columns:
+            self.df[col] = self.df[col].fillna("").astype(str).str.strip()
 
         self.labels = self.df["model_label"].tolist()
 
@@ -55,6 +63,26 @@ class SkinDiseaseRetriever:
             "SkinDiseaseRetriever initialized successfully | total_labels=%s",
             len(self.labels),
         )
+
+    def _row_to_result(
+        self,
+        row: pd.Series,
+        input_label: str,
+        match_type: str,
+    ) -> Dict[str, Any]:
+        return {
+            "matched": True,
+            "match_type": match_type,
+            "input_label": input_label,
+            "matched_label": row["model_label"],
+            "disease": row["disease"],
+            "simple_explanation": row["simple_explanation"],
+            "common_signs": row["common_signs"],
+            "safe_actions": row["safe_actions"],
+            "avoid": row["avoid"],
+            "when_to_seek_help": row["when_to_seek_help"],
+            "source_url": row.get("source_url", ""),
+        }
 
     def retrieve(self, predicted_label: str) -> Dict[str, Any]:
         logger.info("Retrieving disease context | input_label=%s", predicted_label)
@@ -80,14 +108,11 @@ class SkinDiseaseRetriever:
                 row["disease"],
             )
 
-            return {
-                "matched": True,
-                "match_type": "exact",
-                "input_label": predicted_label,
-                "matched_label": row["model_label"],
-                "disease": row["disease"],
-                "context": row["llm_context"],
-            }
+            return self._row_to_result(
+                row=row,
+                input_label=predicted_label,
+                match_type="exact",
+            )
 
         logger.info(
             "No exact match found. Trying fuzzy match | input_label=%s",
@@ -112,14 +137,11 @@ class SkinDiseaseRetriever:
                 row["disease"],
             )
 
-            return {
-                "matched": True,
-                "match_type": "fuzzy",
-                "input_label": predicted_label,
-                "matched_label": row["model_label"],
-                "disease": row["disease"],
-                "context": row["llm_context"],
-            }
+            return self._row_to_result(
+                row=row,
+                input_label=predicted_label,
+                match_type="fuzzy",
+            )
 
         logger.warning(
             "No disease label match found | input_label=%s",
@@ -132,5 +154,10 @@ class SkinDiseaseRetriever:
             "input_label": predicted_label,
             "matched_label": None,
             "disease": None,
-            "context": None,
+            "simple_explanation": None,
+            "common_signs": None,
+            "safe_actions": None,
+            "avoid": None,
+            "when_to_seek_help": None,
+            "source_url": None,
         }

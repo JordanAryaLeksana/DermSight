@@ -45,7 +45,7 @@ def get_recommendation_service() -> SkinRecommendationService:
     if _recommendation_service is None:
         disease_list_path = os.getenv(
             "DISEASE_LIST_PATH",
-            "llm/data/skin_knowledge_rag.csv",
+            "llm/data/skin_knowledge_serving.csv",
         )
 
         retriever = SkinDiseaseRetriever(

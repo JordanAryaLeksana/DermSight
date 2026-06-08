@@ -36,11 +36,10 @@ def service():
 def test_generate_recommendation_returns_expected_structure(service):
     result = service.generate_recommendation(
         predicted_label="Acne",
-        confidence=0.87,
+        confidence=0.461,
     )
 
-    print("\n=== Recommendation Result ===")
-    pprint(result)
+    print(result["recommendation"])
 
     assert isinstance(result, dict)
     assert result["predicted_label"] == "Acne"

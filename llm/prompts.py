@@ -5,27 +5,65 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-SYSTEM_PROMPT = """
-Anda adalah asisten edukasi medis yang berfokus pada informasi penyakit kulit.
 
-Tugas Anda adalah menjelaskan hasil klasifikasi penyakit kulit berbasis AI dengan cara yang aman,
-jelas, dan mudah dipahami oleh pasien.
+SYSTEM_PROMPT = """
+Anda adalah asisten edukasi kesehatan kulit untuk masyarakat umum, termasuk masyarakat di daerah 3T.
+
+Tugas Anda adalah menjelaskan hasil klasifikasi penyakit kulit berbasis AI dengan bahasa Indonesia yang sederhana, jelas, singkat, dan mudah dipahami.
 
 Aturan:
-- Jangan memberikan diagnosis medis yang pasti.
-- Selalu jelaskan bahwa hasil ini berasal dari model klasifikasi gambar berbasis AI.
-- Gunakan hanya konteks penyakit yang diberikan oleh knowledge base.
-- Jika konteks tidak tersedia atau informasinya terbatas, jelaskan dengan jelas bahwa informasi yang tersedia terbatas.
+- Jangan memberikan diagnosis medis pasti.
+- Selalu jelaskan bahwa hasil berasal dari model klasifikasi gambar berbasis AI.
+- Gunakan hanya data dari knowledge base yang diberikan.
+- Jangan menambahkan informasi medis di luar knowledge base.
+- Jika informasi tertentu tidak tersedia di knowledge base, tulis bahwa informasi tersebut tidak tersedia.
 - Jangan merekomendasikan obat resep.
-- Jangan memberikan diagnosis kondisi darurat.
-- Sarankan pengguna untuk berkonsultasi dengan dokter atau dokter spesialis kulit yang berkualifikasi.
-- Gunakan bahasa sederhana yang mudah dipahami oleh pengguna non-medis.
-- Bersikap tenang, sopan, dan meyakinkan.
+- Jangan menyebut nama obat.
+- Jangan menyuruh pengguna membeli obat tertentu.
+- Jangan memberi instruksi tindakan medis yang berisiko.
+- Sarankan pengguna memeriksakan diri ke puskesmas, pustu, klinik, posyandu, tenaga kesehatan, dokter, atau dokter spesialis kulit jika tersedia.
+- Gunakan bahasa sederhana, tidak terlalu teknis, dan cocok untuk pengguna non-medis.
+- Jangan membuat jawaban umum yang tidak informatif.
+- Jangan membuat judul baru.
+- Jangan mengubah urutan judul.
 """.strip()
+
+
+def _safe_text(value: Any, default: str = "Informasi tidak tersedia dalam knowledge base.") -> str:
+    if value is None:
+        return default
+
+    text = str(value).strip()
+
+    if not text or text.lower() in {"nan", "none", "null"}:
+        return default
+
+    return text
+
+
+def _build_confidence_instruction(confidence: float, confidence_percent: float) -> str:
+    if confidence < 0.5:
+        return (
+            f"Tingkat keyakinan AI adalah {confidence_percent}%. "
+            "Jelaskan bahwa angka ini masih rendah, sehingga hasil perlu dibaca dengan hati-hati "
+            "dan sebaiknya diperiksa oleh tenaga kesehatan."
+        )
+
+    if confidence < 0.75:
+        return (
+            f"Tingkat keyakinan AI adalah {confidence_percent}%. "
+            "Jelaskan bahwa angka ini sedang, sehingga hasil masih perlu dikonfirmasi melalui pemeriksaan langsung."
+        )
+
+    return (
+        f"Tingkat keyakinan AI adalah {confidence_percent}%. "
+        "Jelaskan bahwa angka ini cukup tinggi, tetapi tetap bukan diagnosis pasti."
+    )
+
 
 def build_skin_disease_prompt(
     predicted_label: str,
-    confidence: float,  
+    confidence: float,
     retrieval_result: Dict[str, Any],
 ) -> List[Dict[str, str]]:
     logger.info(
@@ -41,7 +79,7 @@ def build_skin_disease_prompt(
             type(predicted_label),
         )
         raise ValueError("Predicted label must be a non-empty string.")
-    
+
     if not isinstance(confidence, (float, int)):
         logger.warning(
             "Invalid confidence type for prompt builder | value=%s | type=%s",
@@ -49,7 +87,7 @@ def build_skin_disease_prompt(
             type(confidence),
         )
         raise ValueError("Confidence must be a number (float or int).")
-    
+
     if confidence < 0 or confidence > 1:
         logger.warning(
             "Confidence out of range for prompt builder | confidence=%s",
@@ -63,12 +101,11 @@ def build_skin_disease_prompt(
             type(retrieval_result),
         )
         raise TypeError("retrieval_result must be a dictionary")
-    
+
     matched = retrieval_result.get("matched", False)
     match_type = retrieval_result.get("match_type")
     matched_label = retrieval_result.get("matched_label")
     disease = retrieval_result.get("disease")
-    context = retrieval_result.get("context")
 
     logger.info(
         "Retrieval result received for prompt | matched=%s | match_type=%s | matched_label=%s | disease=%s",
@@ -77,30 +114,58 @@ def build_skin_disease_prompt(
         matched_label,
         disease,
     )
-    
-    if matched:
-        logger.info(
-            "Using matched disease context for prompt | disease=%s | match_type=%s",
-            disease,
-            match_type,
-        )
 
-        disease_name = str(disease).strip() if disease else "Unknown skin condition"
-        disease_context = str(context).strip() if context else "No disease context was provided."
-        matched_label_text = str(matched_label).strip() if matched_label else "Unknown"
-        match_type_text = str(match_type).strip() if match_type else "unknown"
+    if matched:
+        disease_name = _safe_text(disease, "Kondisi kulit tidak diketahui")
+        matched_label_text = _safe_text(matched_label, "Unknown")
+        match_type_text = _safe_text(match_type, "unknown")
+
+        simple_explanation = _safe_text(
+            retrieval_result.get("simple_explanation")
+        )
+        common_signs = _safe_text(
+            retrieval_result.get("common_signs")
+        )
+        safe_actions = _safe_text(
+            retrieval_result.get("safe_actions")
+        )
+        avoid = _safe_text(
+            retrieval_result.get("avoid")
+        )
+        when_to_seek_help = _safe_text(
+            retrieval_result.get("when_to_seek_help")
+        )
     else:
         logger.warning(
             "No matched retrieval context found. Prompt will use limited information | predicted_label=%s",
             predicted_label,
         )
 
-        disease_name = "Unknown skin condition"
-        disease_context = "No reliable disease context was found for this prediction."
+        disease_name = "Kondisi kulit tidak diketahui"
         matched_label_text = "None"
         match_type_text = "none"
-        
-    confidence_percent = round(float(confidence * 100), 2)
+
+        simple_explanation = "Informasi penjelasan sederhana tidak tersedia dalam knowledge base."
+        common_signs = "Informasi tanda yang bisa diperhatikan tidak tersedia dalam knowledge base."
+        safe_actions = (
+            "Amati perubahan pada kulit; Jaga kebersihan area kulit; "
+            "Hindari menggaruk atau memencet; Periksa ke tenaga kesehatan jika keluhan memburuk"
+        )
+        avoid = (
+            "Jangan memakai obat keras tanpa arahan tenaga kesehatan; "
+            "Jangan menyimpulkan diagnosis hanya dari AI"
+        )
+        when_to_seek_help = (
+            "Periksa ke tenaga kesehatan jika keluhan memburuk, menyebar, nyeri, "
+            "bernanah, berdarah, demam, sering kambuh, atau mengganggu aktivitas."
+        )
+
+    confidence = float(confidence)
+    confidence_percent = round(confidence * 100, 2)
+    confidence_instruction = _build_confidence_instruction(
+        confidence=confidence,
+        confidence_percent=confidence_percent,
+    )
 
     logger.debug(
         "Prompt confidence converted | confidence=%s | confidence_percent=%s",
@@ -109,74 +174,83 @@ def build_skin_disease_prompt(
     )
 
     user_prompt = f"""
-    Model klasifikasi gambar berbasis AI menghasilkan hasil berikut:
+DATA HASIL AI:
+- Label prediksi model: {predicted_label.strip()}
+- Label knowledge base yang cocok: {matched_label_text}
+- Nama penyakit/kondisi: {disease_name}
+- Tingkat keyakinan AI: {confidence_percent}%
+- Jenis kecocokan: {match_type_text}
 
-    Label prediksi dari model:
-    {predicted_label.strip()}
+DATA KNOWLEDGE BASE TERSTRUKTUR:
+Nama kondisi:
+{disease_name}
 
-    Label yang cocok di knowledge base:
-    {matched_label_text}
+Penjelasan sederhana:
+{simple_explanation}
 
-    Nama penyakit/kondisi:
-    {disease_name}
+Tanda yang bisa diperhatikan:
+{common_signs}
 
-    Tingkat keyakinan model:
-    {confidence_percent}%
+Yang dapat dilakukan dengan aman:
+{safe_actions}
 
-    Jenis kecocokan:
-    {match_type_text}
+Yang sebaiknya dihindari:
+{avoid}
 
-    Konteks dari knowledge base:
-    {disease_context}
+Kapan perlu periksa:
+{when_to_seek_help}
 
-    Tugas:
-    Buat penjelasan untuk pengguna dalam Bahasa Indonesia.
+TARGET PEMBACA:
+Masyarakat umum, termasuk warga daerah 3T, yang mungkin tidak terbiasa dengan istilah medis dan mungkin memiliki akses terbatas ke dokter spesialis.
 
-    Aturan penting:
-    - Gunakan hanya informasi dari konteks knowledge base.
-    - Jangan memberikan diagnosis pasti.
-    - Jangan merekomendasikan obat resep.
-    - Jangan menambahkan informasi medis di luar konteks.
-    - Jangan mengubah urutan judul.
-    - Jangan menambahkan judul baru.
-    - Gunakan bahasa sederhana dan mudah dipahami.
-    - Jawaban harus konsisten, rapi, dan tidak terlalu panjang.
-    - Setiap bagian maksimal 2 sampai 4 kalimat, kecuali bagian daftar poin.
+ATURAN WAJIB:
+- Gunakan hanya DATA KNOWLEDGE BASE TERSTRUKTUR.
+- Jangan menambahkan informasi medis di luar data tersebut.
+- Jika nama penyakit/kondisi tersedia, wajib sebutkan nama tersebut.
+- Jangan memberi diagnosis pasti.
+- Jangan menyarankan obat resep.
+- Jangan menyebut nama obat.
+- Jangan menyuruh pengguna mengobati sendiri.
+- Jangan menulis kalimat generik seperti:
+  "masalah kulit yang umum terjadi",
+  "kondisi ini memerlukan perhatian",
+  "penjelasan bergantung pada konteks",
+  atau kalimat umum lain yang tidak memberi informasi nyata.
+- Ubah item yang dipisahkan tanda titik koma menjadi daftar poin.
+- Jangan membuat judul baru.
+- Jangan mengubah urutan judul.
+- Jawaban harus pendek, jelas, menenangkan, dan cocok untuk warga 3T.
 
-    Gunakan format persis seperti di bawah ini:
+FORMAT JAWABAN WAJIB:
 
-    Kemungkinan kondisi:
-    Jelaskan bahwa model AI mendeteksi kemungkinan kondisi {disease_name}. Jelaskan secara singkat bahwa hasil ini berasal dari analisis gambar oleh AI dan bukan diagnosis pasti.
+Nama kondisi:
+Tulis nama kondisi: {disease_name}
 
-    Tingkat keyakinan AI:
-    Jelaskan bahwa tingkat keyakinan model adalah {confidence_percent}%. Terangkan bahwa angka ini menunjukkan keyakinan model terhadap hasil gambar, tetapi belum tentu memastikan kondisi sebenarnya.
+Tingkat keyakinan AI:
+{confidence_instruction}
 
-    Penjelasan sederhana:
-    Jelaskan kondisi ini dengan bahasa awam berdasarkan konteks knowledge base. Buat penjelasan yang mudah dimengerti oleh pengguna non-medis.
+Penjelasan sederhana:
+Tulis ulang penjelasan sederhana dari knowledge base dengan bahasa awam. Jangan menambahkan informasi baru.
 
-    Tanda-tanda umum:
-    - Sebutkan tanda atau gejala dari konteks knowledge base.
-    - Jangan menambahkan tanda yang tidak disebutkan dalam konteks.
-    - Jika konteks tidak menyebutkan tanda/gejala, tulis: Informasi tanda-tanda umum tidak tersedia dalam knowledge base.
+Tanda yang bisa diperhatikan:
+- Tulis tanda dari knowledge base sebagai daftar poin.
+- Jika informasi tidak tersedia, tulis: Informasi tanda yang bisa diperhatikan tidak tersedia dalam knowledge base.
 
-    Langkah yang disarankan:
-    - Amati perubahan pada area kulit.
-    - Jaga kebersihan area kulit.
-    - Hindari menggaruk, memencet, atau mengobati sendiri tanpa arahan tenaga kesehatan.
-    - Konsultasikan dengan dokter atau dokter spesialis kulit untuk pemeriksaan lebih lanjut.
+Yang dapat dilakukan dengan aman:
+- Tulis saran aman dari knowledge base sebagai daftar poin.
+- Pastikan ada arahan realistis untuk warga 3T seperti puskesmas, pustu, klinik, posyandu, atau tenaga kesehatan terdekat jika tersedia.
 
-    Hal yang sebaiknya dihindari:
-    - Jangan menyimpulkan diagnosis hanya dari hasil AI.
-    - Jangan menggunakan obat resep tanpa arahan dokter.
-    - Jangan mengabaikan keluhan jika semakin parah atau tidak membaik.
+Yang sebaiknya dihindari:
+- Tulis hal yang perlu dihindari dari knowledge base sebagai daftar poin.
+- Jangan menambahkan obat atau tindakan medis berisiko.
 
-    Kapan perlu ke dokter:
-    Sarankan pengguna berkonsultasi dengan dokter jika keluhan menetap, memburuk, menyebar, terasa nyeri, berdarah, bernanah, sering kambuh, atau mengganggu aktivitas.
+Kapan perlu periksa:
+Tulis kapan pengguna perlu memeriksakan diri berdasarkan knowledge base.
 
-    Catatan medis:
-    Hasil ini bukan diagnosis medis. Hasil ini berasal dari model klasifikasi gambar berbasis AI dan perlu dikonfirmasi oleh dokter atau tenaga kesehatan yang berkualifikasi melalui pemeriksaan langsung.
-    """.strip()
-        
+Catatan penting:
+Tulis bahwa hasil ini berasal dari model klasifikasi gambar berbasis AI, bukan diagnosis dokter. Pemeriksaan langsung oleh tenaga kesehatan tetap diperlukan.
+""".strip()
+
     logger.info(
         "Skin disease prompt built successfully | disease=%s | match_type=%s",
         disease_name,

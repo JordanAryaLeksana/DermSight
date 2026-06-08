@@ -202,3 +202,14 @@ Traceback (most recent call last):
   File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 132, in _post_image
     raise RuntimeError(f"API error {resp.status_code}: {detail}")
 RuntimeError: API error 500: Failed to analyze skin image
+2026-06-08 15:18:27 | ERROR    | DERMIGHT.__main__ | streamlit_app.py:444 | Runtime error: API error 500: Internal Server Error
+Traceback (most recent call last):
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 395, in render_analysis_button
+    result = call_analyze_api(
+             ^^^^^^^^^^^^^^^^^
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 153, in call_analyze_api
+    data = _post_image(url, file_name, file_bytes, content_type, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jordan/Backup HDD/AI_Machine Learning/DermSight/web/streamlit_app.py", line 132, in _post_image
+    raise RuntimeError(f"API error {resp.status_code}: {detail}")
+RuntimeError: API error 500: Internal Server Error

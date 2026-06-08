@@ -1,0 +1,27 @@
+2026-06-08 15:13:03 | ERROR    | DERMIGHT.llm.rag_retriever | rag_retriever.py:49 | Missing required columns in disease list CSV | missing={'safe_actions', 'avoid', 'simple_explanation', 'when_to_seek_help', 'common_signs'}
+2026-06-08 15:13:03 | ERROR    | DERMIGHT.llm.rag_retriever | rag_retriever.py:49 | Missing required columns in disease list CSV | missing={'safe_actions', 'avoid', 'simple_explanation', 'when_to_seek_help', 'common_signs'}
+2026-06-08 15:13:03 | ERROR    | DERMIGHT.llm.rag_retriever | rag_retriever.py:49 | Missing required columns in disease list CSV | missing={'safe_actions', 'avoid', 'simple_explanation', 'when_to_seek_help', 'common_signs'}
+2026-06-08 15:13:03 | ERROR    | DERMIGHT.llm.rag_retriever | rag_retriever.py:20 | Disease list file not found at: file_yang_tidak_ada.csv
+2026-06-08 15:13:03 | ERROR    | DERMIGHT.llm.rag_retriever | rag_retriever.py:49 | Missing required columns in disease list CSV | missing={'safe_actions', 'avoid', 'model_label', 'simple_explanation', 'when_to_seek_help', 'common_signs', 'disease'}
+2026-06-08 15:13:03 | ERROR    | DERMIGHT.llm.rag_retriever | rag_retriever.py:49 | Missing required columns in disease list CSV | missing={'safe_actions', 'avoid', 'simple_explanation', 'when_to_seek_help', 'common_signs'}
+2026-06-08 15:13:03 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:31 | Generating recommendation | predicted_label=Acne | confidence=0.85
+2026-06-08 15:13:03 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:62 | Starting retrieval step | label=Acne
+2026-06-08 15:13:03 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:66 | Retrieval result received | matched=True | match_type=exact | disease=Acne
+2026-06-08 15:13:03 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:73 | Building structured recommendation from knowledge base
+2026-06-08 15:13:03 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:80 | Structured recommendation built successfully | response_length=1006
+2026-06-08 15:13:03 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:93 | Recommendation service completed successfully | label=Acne | confidence=0.8500
+2026-06-08 15:13:03 | WARNING  | DERMIGHT.llm.recommendation | recommendation.py:38 | Invalid predicted_label received | value= | type=<class 'str'>
+2026-06-08 15:13:03 | WARNING  | DERMIGHT.llm.recommendation | recommendation.py:46 | Invalid confidence type received | value=high | type=<class 'str'>
+2026-06-08 15:13:03 | WARNING  | DERMIGHT.llm.recommendation | recommendation.py:54 | Confidence out of range | confidence=-0.1
+2026-06-08 15:13:03 | WARNING  | DERMIGHT.llm.recommendation | recommendation.py:54 | Confidence out of range | confidence=1.2
+2026-06-08 15:14:14 | WARNING  | DERMIGHT.llm.rag_retriever | rag_retriever.py:146 | No disease label match found | input_label=CompletelyUnknownDisease
+2026-06-08 15:14:14 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:31 | Generating recommendation | predicted_label=Acne | confidence=0.85
+2026-06-08 15:14:14 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:62 | Starting retrieval step | label=Acne
+2026-06-08 15:14:14 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:66 | Retrieval result received | matched=True | match_type=exact | disease=Acne
+2026-06-08 15:14:14 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:73 | Building structured recommendation from knowledge base
+2026-06-08 15:14:14 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:80 | Structured recommendation built successfully | response_length=1006
+2026-06-08 15:14:14 | INFO     | DERMIGHT.llm.recommendation | recommendation.py:93 | Recommendation service completed successfully | label=Acne | confidence=0.8500
+2026-06-08 15:14:14 | WARNING  | DERMIGHT.llm.recommendation | recommendation.py:38 | Invalid predicted_label received | value= | type=<class 'str'>
+2026-06-08 15:14:14 | WARNING  | DERMIGHT.llm.recommendation | recommendation.py:46 | Invalid confidence type received | value=high | type=<class 'str'>
+2026-06-08 15:14:14 | WARNING  | DERMIGHT.llm.recommendation | recommendation.py:54 | Confidence out of range | confidence=-0.1
+2026-06-08 15:14:14 | WARNING  | DERMIGHT.llm.recommendation | recommendation.py:54 | Confidence out of range | confidence=1.2
