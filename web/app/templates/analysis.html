@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Analisis Hasil · DermSight{% endblock %}
+{% block content %}
+<header class="page-heading compact-heading">
+  <p class="eyebrow">Analisis hasil</p>
+  <h1>{{ label }}</h1>
+  <p class="lead">Kemungkinan kondisi berdasarkan gambar · keyakinan sistem {{ confidence_percent }}%</p>
+</header>
+
+<div class="analysis-grid">
+  <aside class="summary-card">
+    <span class="number-chip">AI</span>
+    <h2>Ringkasan hasil</h2>
+    <p>Sistem menemukan kemiripan dengan <strong>{{ label }}</strong>.</p>
+    <p class="big-confidence">{{ confidence_percent }}<small>%</small></p>
+    <p>tingkat keyakinan model</p>
+  </aside>
+  <article class="analysis-card">
+    {% if analysis_error %}
+      <div class="message-card error-card" role="alert"><span class="message-icon">!</span><div><h2>Analisis belum tersedia</h2><p>{{ analysis_error }}</p></div></div>
+    {% elif recommendation %}
+      <p class="result-kicker">Penjelasan edukatif</p>
+      <div class="recommendation-text">{{ recommendation }}</div>
+    {% else %}
+      <p>Penjelasan belum tersedia untuk hasil ini.</p>
+    {% endif %}
+  </article>
+</div>
+
+<section class="medical-note large-note">
+  <strong>Informasi ini tidak menggantikan dokter</strong>
+  <p>Gunakan hasil sebagai edukasi awal. Segera cari bantuan jika area kulit nyeri, menyebar, berdarah, bernanah, disertai demam, atau tidak membaik.</p>
+</section>
+<div class="page-actions">
+  <a class="button button-primary" href="{{ url_for('main.detection') }}">Deteksi Foto Lain</a>
+  <a class="button button-secondary" href="{{ url_for('main.aspiration') }}">Sampaikan Aspirasi</a>
+</div>
+{% endblock %}

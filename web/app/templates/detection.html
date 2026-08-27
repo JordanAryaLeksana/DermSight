@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Deteksi Penyakit Kulit · DermSight{% endblock %}
+{% block content %}
+<section class="hero grid-two">
+  <div>
+    <p class="eyebrow">Analisis awal berbasis AI</p>
+    <h1>Deteksi<br>Penyakit Kulit</h1>
+  </div>
+  <div class="hero-copy">
+    <p class="lead">Unggah foto area kulit untuk mendapatkan hasil analisis awal dari sistem DermSight.</p>
+    <div class="trust-pills" aria-label="Keunggulan layanan">
+      <span>Gratis</span><span>Tanpa login</span><span>Privasi terjaga</span>
+    </div>
+  </div>
+</section>
+
+<section class="detection-layout" aria-label="Form deteksi kulit">
+  <form class="upload-card" method="post" action="{{ url_for('main.detect') }}" enctype="multipart/form-data" data-detection-form>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="step-label"><span>01</span> Pilih foto</div>
+    <label class="upload-zone" for="skin-image" data-tour-target="upload">
+      <span class="upload-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg></span>
+      <strong>Unggah foto kulit</strong>
+      <span>Tekan untuk memilih foto atau buka kamera</span>
+      <small>JPG atau PNG · Maks. 8 MB</small>
+    </label>
+    <input class="file-input" id="skin-image" name="image" type="file" accept="image/jpeg,image/png" capture="environment" required data-image-input>
+    <div class="preview-box" data-preview-box hidden>
+      <img src="" alt="Pratinjau foto kulit yang dipilih" data-image-preview>
+      <div><strong data-file-name></strong><span>Foto siap dianalisis</span></div>
+    </div>
+    <div class="photo-tips">
+      <strong>Foto yang baik</strong>
+      <ul>
+        <li>Cahaya cukup dan gambar tidak buram</li>
+        <li>Fokus pada area kulit, jarak sekitar 15–30 cm</li>
+        <li>Hindari wajah penuh dan informasi pribadi</li>
+      </ul>
+    </div>
+    <button class="button button-primary button-wide" type="submit" data-tour-target="detect" data-submit-button>
+      <span data-button-label>Deteksi Sekarang</span><span aria-hidden="true">→</span>
+    </button>
+    <p class="loading-note" role="status" data-loading-note hidden>Gambar sedang dianalisis. Mohon tunggu…</p>
+  </form>
+
+  <div class="result-column" id="hasil" data-tour-target="result" tabindex="-1">
+    <div class="step-label"><span>02</span> Hasil analisis</div>
+    {% if error %}
+      <section class="message-card error-card" role="alert">
+        <span class="message-icon" aria-hidden="true">!</span>
+        <div><h2>Analisis belum berhasil</h2><p>{{ error }}</p><p>Foto yang dipilih tidak disimpan.</p></div>
+      </section>
+    {% elif result %}
+      <section class="result-card result-reveal" aria-live="polite">
+        <p class="result-kicker">Hasil deteksi</p>
+        <p>Hasil analisis menunjukkan kemungkinan:</p>
+        <h2>{{ result.display_label }}</h2>
+        <div class="confidence-row">
+          <div><span>Tingkat keyakinan</span><strong>{{ result.confidence_percent }}%</strong></div>
+          <meter class="confidence-track" min="0" max="100" value="{{ result.confidence_percent }}" aria-label="Tingkat keyakinan {{ result.confidence_percent }} persen">{{ result.confidence_percent }}%</meter>
+        </div>
+        <div class="medical-note">
+          <strong>Perlu diingat</strong>
+          <p>Hasil ini adalah informasi awal, bukan diagnosis medis. Jika keluhan memburuk atau mengganggu, hubungi tenaga kesehatan terdekat.</p>
+        </div>
+        <div class="result-actions">
+          <a class="button button-primary" href="{{ url_for('main.analysis', token=result.analysis_token) }}">Lihat Analisis Lengkap</a>
+          <a class="button button-secondary" href="{{ url_for('main.detection') }}">Deteksi Foto Lain</a>
+        </div>
+      </section>
+    {% else %}
+      <section class="empty-result">
+        <div class="empty-illustration" aria-hidden="true"><span></span><span></span><span></span></div>
+        <h2>Hasil akan tampil di sini</h2>
+        <p>Pilih foto yang jelas, lalu tekan tombol <strong>Deteksi Sekarang</strong>.</p>
+      </section>
+    {% endif %}
+  </div>
+</section>
+
+<section class="privacy-strip">
+  <span aria-hidden="true">◎</span>
+  <div><strong>Privasi Anda penting</strong><p>Foto hanya diproses untuk analisis saat ini dan tidak disimpan permanen oleh aplikasi web.</p></div>
+</section>
+{% endblock %}
+
+{% block overlay %}
+<div class="tour-overlay" data-tour-overlay hidden>
+  <div class="tour-backdrop"></div>
+  <section class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" tabindex="-1">
+    <div class="tour-progress"><span data-tour-count>1 dari 3</span><button type="button" data-tour-skip>Lewati</button></div>
+    <h2 id="tour-title" data-tour-title>Unggah Foto</h2>
+    <p data-tour-copy>Pilih foto kulit yang terlihat jelas dan memiliki pencahayaan yang cukup.</p>
+    <div class="tour-actions">
+      <button class="button button-secondary" type="button" data-tour-back>Kembali</button>
+      <button class="button button-primary" type="button" data-tour-next>Berikutnya</button>
+    </div>
+  </section>
+</div>
+{% endblock %}

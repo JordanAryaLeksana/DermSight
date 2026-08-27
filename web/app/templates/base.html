@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="DermSight membantu edukasi awal kondisi kulit melalui analisis gambar berbasis AI.">
+  <title>{% block title %}DermSight{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Lewati ke konten utama</a>
+  <header class="site-header">
+    <a class="brand" href="{{ url_for('main.detection') }}" aria-label="DermSight, kembali ke deteksi">
+      <span class="brand-mark" aria-hidden="true">D</span>
+      <span>DermSight</span>
+    </a>
+    <nav aria-label="Navigasi utama">
+      <a href="{{ url_for('main.detection') }}" {% if request.endpoint in ('main.detection', 'main.detect', 'main.analysis') %}aria-current="page"{% endif %}>Deteksi</a>
+      <a href="{{ url_for('main.aspiration') }}" {% if request.endpoint == 'main.aspiration' %}aria-current="page"{% endif %}>Aspirasi</a>
+      <button class="nav-help" type="button" data-open-tutorial hidden>Bantuan</button>
+    </nav>
+  </header>
+
+  <main id="main-content" class="page-shell">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p><strong>DermSight</strong> · Edukasi awal kesehatan kulit berbasis AI.</p>
+    <p>Bukan alat diagnosis medis.</p>
+  </footer>
+  {% block overlay %}{% endblock %}
+</body>
+</html>

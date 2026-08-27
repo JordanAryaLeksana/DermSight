@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Sampaikan Aspirasi · DermSight{% endblock %}
+{% block content %}
+<header class="page-heading grid-two">
+  <div><p class="eyebrow">Suara masyarakat</p><h1>Sampaikan<br>Aspirasi</h1></div>
+  <p class="lead">Masukan Anda membantu DermSight menjadi lebih mudah, aman, dan bermanfaat untuk masyarakat Indonesia.</p>
+</header>
+
+{% if success %}
+<section class="success-panel" role="status">
+  <span class="success-mark" aria-hidden="true">✓</span>
+  <p class="eyebrow">Pesan terkirim</p>
+  <h2>Aspirasi berhasil dikirim.</h2>
+  <p>Terima kasih telah membantu kami mengembangkan DermSight.</p>
+  <a class="button button-primary" href="{{ url_for('main.detection') }}">Kembali ke Deteksi</a>
+</section>
+{% else %}
+<div class="form-layout">
+  <section class="form-intro">
+    <span class="number-chip">03</span>
+    <h2>Ceritakan kepada kami</h2>
+    <p>Anda dapat mengirim saran, kritik, laporan, atau kebutuhan masyarakat terkait layanan kesehatan kulit.</p>
+    <div class="privacy-mini"><strong>Data seperlunya</strong><p>Nama dan kontak bersifat opsional. Jangan masukkan data kesehatan pribadi yang sensitif.</p></div>
+  </section>
+  <form class="aspiration-form" method="post" action="{{ url_for('main.aspiration') }}" data-aspiration-form>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="honeypot" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+    {% if errors %}<div class="form-errors" role="alert"><strong>Periksa kembali:</strong><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+    <label for="kind">Jenis Aspirasi <span aria-hidden="true">*</span></label>
+    <select id="kind" name="kind" required>{% for kind in kinds %}<option value="{{ kind }}" {% if values.kind == kind %}selected{% endif %}>{{ kind }}</option>{% endfor %}</select>
+    <label for="name">Nama <span class="optional">Opsional</span></label>
+    <input id="name" name="name" value="{{ values.name }}" maxlength="100" autocomplete="name" placeholder="Boleh dikosongkan">
+    <label for="contact">Kontak <span class="optional">Opsional</span></label>
+    <input id="contact" name="contact" value="{{ values.contact }}" maxlength="150" autocomplete="email" placeholder="Email atau nomor telepon">
+    <label for="message">Pesan <span aria-hidden="true">*</span></label>
+    <textarea id="message" name="message" minlength="10" maxlength="5000" rows="7" required placeholder="Tuliskan masukan, kritik, saran, atau laporan Anda…">{{ values.message }}</textarea>
+    <p class="field-help">Minimal 10 karakter. Pesan dikirim langsung ke pengelola DermSight.</p>
+    <button class="button button-primary button-wide" type="submit">Kirim Aspirasi <span aria-hidden="true">→</span></button>
+    {% if whatsapp_url %}<a class="button button-secondary button-wide" href="{{ whatsapp_url }}" rel="noopener noreferrer">Kirim melalui WhatsApp</a>{% endif %}
+  </form>
+</div>
+{% endif %}
+{% endblock %}
