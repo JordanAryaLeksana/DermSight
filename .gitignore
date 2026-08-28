@@ -16,3 +16,8 @@ src/data/test
 src/data/val
 
 .ipynb_checkpoints/
+
+# DermSight Flask runtime
+web/.env
+web/instance/
+web/logs/*.log

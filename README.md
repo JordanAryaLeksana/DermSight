@@ -1,677 +1,163 @@
-# 🩺 DermSight
+# DermSight
 
-## AI-Powered Skin Disease Education Assistant
+DermSight adalah aplikasi web ringan untuk edukasi awal kondisi kulit dari foto. Antarmuka produksi menggunakan Flask, server-rendered HTML, CSS, dan vanilla JavaScript agar nyaman pada ponsel murah serta koneksi terbatas.
 
-**DermSight** adalah aplikasi berbasis AI untuk membantu edukasi awal penyakit kulit melalui analisis gambar kulit. Pengguna dapat mengunggah atau mengambil foto kulit, lalu sistem akan memberikan perkiraan kondisi kulit, tingkat keyakinan sistem, dan rekomendasi edukatif berbasis LLM.
+> DermSight bukan alat diagnosis medis. Hasil hanya menunjukkan kemungkinan berdasarkan kemiripan yang dipelajari model. Pemeriksaan langsung oleh tenaga kesehatan tetap diperlukan.
 
-> ⚠️ **Disclaimer:** DermSight bukan pengganti diagnosis dokter. Hasil yang diberikan hanya untuk edukasi awal. Jika keluhan kulit memburuk, nyeri, menyebar, berdarah, bernanah, disertai demam, atau tidak membaik, segera konsultasikan ke tenaga kesehatan terdekat.
+## Fitur
 
----
+- Upload atau ambil foto langsung dari kamera ponsel.
+- Klasifikasi 22 label dengan EfficientNet B2 dan confidence score.
+- Analisis edukatif bahasa Indonesia melalui Ollama + RAG knowledge base.
+- Tutorial tiga langkah saat kunjungan pertama dan tombol untuk membukanya kembali.
+- Aspirasi masyarakat melalui SMTP dengan tujuan yang dapat diganti lewat environment.
+- CSRF, pemeriksaan isi gambar, batas upload, security headers, custom error page, dan `/health`.
+- Mobile-first tanpa React, font eksternal, icon pack, atau JavaScript bundle besar.
 
-## ✨ Highlight
-
-* 📷 Upload atau ambil foto kulit langsung dari kamera.
-* 🧠 Model AI berbasis EfficientNet untuk klasifikasi penyakit kulit.
-* 🤖 Rekomendasi edukatif menggunakan LLM.
-* 🚀 Backend API menggunakan FastAPI.
-* 🌐 Web app interaktif menggunakan Streamlit.
-* 📄 Fitur unduh laporan hasil analisis.
-* 🗣️ Form **Suara Masyarakat Daerah 3T** untuk mengumpulkan aspirasi dan kendala akses kesehatan kulit.
-
----
-
-## 🎯 Tujuan Project
-
-DermSight dikembangkan untuk membantu masyarakat mendapatkan edukasi awal mengenai kondisi kulit secara cepat, sederhana, dan mudah digunakan.
-
-Project ini berfokus pada:
-
-1. Membantu masyarakat memahami kemungkinan kondisi kulit dari gambar.
-2. Memberikan rekomendasi edukatif yang mudah dipahami.
-3. Mendukung akses edukasi kesehatan kulit, terutama untuk masyarakat daerah 3T.
-4. Menyediakan sistem AI yang terintegrasi dari model, API, LLM, hingga web interface.
-
----
-
-## 📦 Dataset
-
-Dataset yang digunakan untuk pengembangan dan pelatihan model DermSight dapat diakses melalui Google Drive berikut:
-
-🔗 **Dataset DermSight:**  
-https://drive.google.com/drive/folders/1kN9GwU4wqlNyizO9kel0mzoCpt4hWTOj?usp=sharing
-
-Dataset ini digunakan untuk melatih model klasifikasi penyakit kulit dengan 22 label. Data gambar dipisahkan ke dalam folder training, validation, dan testing agar proses pelatihan serta evaluasi model dapat dilakukan dengan lebih terstruktur.
-
-> Catatan: Dataset tidak disertakan langsung di repository karena ukuran file cukup besar. Silakan unduh dataset melalui link di atas, lalu letakkan ke dalam folder `src/data/` sesuai struktur project, lalu gunakan main.py untuk memisah data train menjadi train+val.
-
-Contoh struktur dataset:
+## Arsitektur
 
 ```text
-src/data/
-├── train/
-└── test/
-
-
-## 🖼️ User Flow Aplikasi
-
-Alur penggunaan DermSight dibuat sederhana agar mudah digunakan oleh masyarakat umum.
-
-![User Flow DermSight](docs/assets/user-flow-dermsight.png)
-
-### Alur Singkat
-
-1. Pengguna membuka website DermSight.
-2. Pengguna membaca panduan foto kulit.
-3. Pengguna memilih atau mengambil foto kulit.
-4. Sistem melakukan analisis gambar.
-5. Pengguna melihat hasil analisis.
-6. Pengguna membaca rekomendasi edukatif.
-7. Pengguna dapat mengunduh laporan.
-8. Pengguna dapat mengisi form Suara Masyarakat 3T.
-
----
-
-## 🧑‍💻 AI Engineer Overview
-
-DermSight menggabungkan beberapa komponen utama, mulai dari model AI, backend API, LLM recommendation, hingga web application.
-
-![AI Engineer Overview](docs/assets/ai-engineer-overview.png)
-
----
-
-## 🧠 Arsitektur Model AI
-
-Model klasifikasi DermSight menggunakan arsitektur berbasis **EfficientNet** untuk memproses citra kulit.
-
-![Model Architecture](docs/assets/model-architecture.png)
-
-### Ringkasan Arsitektur
-
-```text
-Input Gambar Kulit
-        ↓
-Preprocessing
-        ↓
-Data Augmentation
-        ↓
-EfficientNet Backbone
-        ↓
-Global Average Pooling
-        ↓
-Shared Fully Connected Layer
-        ↓
-Classifier Head
-        ↓
-Output Prediksi + Confidence
+Browser
+  ↓ server-rendered form + CSRF
+Flask (`web/wsgi.py`)
+  ├─ PredictionService → predictor lama → EfficientNet B2
+  ├─ LLMService → retriever lama → Ollama
+  └─ EmailService → SMTP stakeholder
 ```
 
-### Komponen Model
-
-* **Input size:** 224 × 224 × 3
-* **Backbone:** EfficientNet
-* **Pretrained weights:** ImageNet
-* **Pooling:** Global Average Pooling
-* **Regularisasi:** Dropout dan Batch Normalization
-* **Output:** Softmax classification
-* **Jumlah label:** 22 label penyakit kulit
-
----
-
-## 🏷️ Label Penyakit Kulit
-
-DermSight saat ini mendukung 22 label klasifikasi penyakit kulit:
-
-| No | Label                 |
-| -: | --------------------- |
-|  1 | Acne                  |
-|  2 | Actinic Keratosis     |
-|  3 | Benign tumors         |
-|  4 | Bullous               |
-|  5 | Candidiasis           |
-|  6 | Drug Eruption         |
-|  7 | Eczema                |
-|  8 | Infestations / Bites  |
-|  9 | Lichen                |
-| 10 | Lupus                 |
-| 11 | Moles                 |
-| 12 | Psoriasis             |
-| 13 | Rosacea               |
-| 14 | Seborrheic Keratoses  |
-| 15 | Skin Cancer           |
-| 16 | Sun / Sunlight Damage |
-| 17 | Tinea                 |
-| 18 | Unknown / Normal      |
-| 19 | Vascular Tumors       |
-| 20 | Vasculitis            |
-| 21 | Vitiligo              |
-| 22 | Warts                 |
-
----
-
-## 🧩 Tech Stack
-
-### Machine Learning & Deep Learning
-
-* TensorFlow
-* TensorBoard
-* NumPy
-* Pandas
-* Scikit-learn
-
-### Computer Vision & Visualization
-
-* Pillow
-* Matplotlib
-* OpenCV
-
-### Backend API
-
-* FastAPI
-* Uvicorn
-* Python Multipart
-
-### Frontend Web App
-
-* Streamlit
-* Requests
-
-### Environment & Configuration
-
-* Python Dotenv
-
----
-
-## 🏗️ Sistem Pipeline
-
-DermSight terdiri dari beberapa pipeline utama:
+Pipeline model lama tetap digunakan:
 
 ```text
-User
- ↓
-Streamlit Web App
- ↓
-FastAPI Backend
- ↓
-AI Model Prediction
- ↓
-Disease Context Retriever
- ↓
-LLM Recommendation
- ↓
-Result Display + Report Download
+JPG/PNG tervalidasi
+  ↓ RGB + resize 224×224
+EfficientNet preprocess_input
+  ↓
+EfficientNet B2 + classifier head
+  ↓
+Softmax → label + confidence
 ```
 
-### 1. Web App
+Model di-lazy-load satu kali per Gunicorn worker. Foto diproses di memori dan tidak disimpan oleh aplikasi Flask. Detail audit dan keputusan implementasi ada di [docs/IMPLEMENTATION_GUIDE.md](docs/IMPLEMENTATION_GUIDE.md).
 
-Pengguna mengakses aplikasi melalui Streamlit. Di halaman web, pengguna dapat:
-
-* membaca panduan foto,
-* upload foto dari perangkat,
-* mengambil foto dari kamera,
-* menjalankan analisis,
-* melihat hasil prediksi,
-* membaca rekomendasi,
-* mengunduh laporan,
-* mengisi form Suara Masyarakat 3T.
-
-### 2. Backend API
-
-FastAPI digunakan sebagai penghubung antara web app, model AI, dan LLM.
-
-API bertugas untuk:
-
-* menerima gambar dari web app,
-* menjalankan preprocessing,
-* memanggil model AI,
-* mengirim hasil prediksi,
-* memanggil layanan rekomendasi LLM.
-
-### 3. AI Model
-
-Model AI memproses gambar kulit dan menghasilkan:
-
-* `predicted_label`
-* `confidence`
-
-Output ini digunakan sebagai dasar untuk membuat rekomendasi edukatif.
-
-### 4. LLM Recommendation
-
-Setelah model menghasilkan prediksi, sistem mengambil konteks penyakit yang sesuai. Konteks tersebut kemudian digunakan oleh LLM untuk menghasilkan rekomendasi edukatif.
-
-Rekomendasi tidak dibuat secara hardcoded, tetapi dihasilkan secara dinamis berdasarkan hasil prediksi.
-
----
-
-## 📁 Struktur Project
-
-Contoh struktur project DermSight:
+## Struktur web
 
 ```text
-DermSight/
-│
-├── api/
-│   ├── main.py
-│   └── routes/
-│
-├── llm/
-│   ├── ollama_client.py
-│   ├── prompts.py
-│   └── rag_retriever.py
-│
-├── src/
-│   ├── data/
-│   ├── models/
-│   ├── training/
-│   ├── outputs/
-│   └── logs/
-│
-├── web/
-│   └── app.py
-│
+web/
+├── app/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── routes.py
+│   ├── services/
+│   ├── static/
+│   └── templates/
 ├── tests/
-│
-├── utils/
-│   └── logger.py
-│
-├── docs/
-│   └── assets/
-│       ├── user-flow-dermsight.png
-│       ├── ai-engineer-overview.png
-│       ├── model-architecture.png
-│       └── roadmap-6-months.png
-│
-├── requirements.txt
-├── requirements-container.txt
 ├── .env.example
-├── .gitignore
-└── README.md
+├── requirements.txt
+└── wsgi.py
 ```
 
----
+`web/streamlit_app.py` hanya dipertahankan sebagai referensi aplikasi lama dan bukan entry point production.
 
-## ⚙️ Setup Project
+## Setup lokal
 
-### 1. Clone Repository
+Gunakan Python 3.11 atau versi yang kompatibel dengan TensorFlow yang dipilih.
 
 ```bash
-git clone https://github.com/JordanAryaLeksana/DermSight.git
-cd DermSight
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r web/requirements.txt
+cp web/.env.example web/.env
 ```
 
----
-
-### 2. Buat Virtual Environment
-
-#### Windows
-
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-#### Linux / macOS
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
----
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-Jika menggunakan environment container atau GPU tertentu, gunakan:
-
-```bash
-pip install -r requirements-container.txt
-```
-
----
-
-### 4. Buat File Environment
-
-Copy file `.env.example` menjadi `.env`.
-
-```bash
-cp .env.example .env
-```
-
-Contoh isi `.env`:
+Isi minimal `web/.env`:
 
 ```env
-DERMSIGHT_API_BASE_URL=http://localhost:8000
-DERMSIGHT_ANALYZE_ENDPOINT=/skin/analyze
-DERMSIGHT_PREDICT_ENDPOINT=/skin/predict
-DERMSIGHT_RECOMMEND_ENDPOINT=/recommendation/generate
+SECRET_KEY=buat-secret-acak-yang-panjang
+SKIN_MODEL_PATH=src/outputs/final_model.weights.h5
+CLASS_NAMES_PATH=src/outputs/class_names.json
+MODEL_CONFIG_PATH=src/outputs/config.json
+DISEASE_LIST_PATH=llm/data/skin_knowledge_serving.csv
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=gemma4:e2b
+
+ASPIRATION_EMAIL_TO=stakeholder@example.go.id
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=
+SMTP_PASSWORD=
+SMTP_FROM=dermsight@example.com
+SMTP_USE_TLS=true
 ```
 
----
-
-## 🚀 Cara Menjalankan Aplikasi
-
-DermSight membutuhkan dua service utama:
-
-1. **FastAPI Backend**
-2. **Streamlit Web App**
-
----
-
-### 1. Jalankan FastAPI Backend
+Muat environment lalu jalankan development server tanpa debug:
 
 ```bash
-uvicorn api.main:app --reload
+set -a
+source web/.env
+set +a
+python3 web/wsgi.py
 ```
 
-Jika struktur entry point berbeda, sesuaikan dengan file utama FastAPI yang digunakan.
+Buka `http://127.0.0.1:5000`. Ollama hanya diperlukan saat pengguna membuka analisis lengkap; deteksi model tetap terpisah dari ketersediaan LLM.
 
-Contoh lain:
+## Menjalankan test
 
 ```bash
-uvicorn src.api.main:app --reload
+pytest -q web/tests
 ```
 
-Backend akan berjalan di:
+Test web memalsukan model, LLM, dan SMTP. Tidak ada email sungguhan atau request Ollama selama automated testing.
+
+## Production dengan Gunicorn dan Nginx
+
+Dari root repository:
+
+```bash
+gunicorn --workers 2 --threads 2 --timeout 180 --bind 127.0.0.1:8000 web.wsgi:app
+```
+
+Mulai dengan satu atau dua worker dan ukur RAM: setiap worker menyimpan salinan TensorFlow/model. Di Nginx, teruskan HTTPS ke Gunicorn dan set `client_max_body_size 8m`. Aktifkan konfigurasi berikut di production:
+
+```env
+SECRET_KEY=secret-random-production
+SESSION_COOKIE_SECURE=true
+TRUST_PROXY_HEADERS=true
+LOG_LEVEL=INFO
+```
+
+Jangan expose Gunicorn langsung ke internet. Jalankan debug dalam keadaan off, gunakan HTTPS, simpan `.env` di luar version control, dan batasi akses ke kredensial SMTP.
+
+Health check:
 
 ```text
-http://localhost:8000
+GET /health
+→ {"service":"dermsight-web","status":"ok"}
 ```
 
----
+## Endpoint web
 
-### 2. Jalankan Streamlit Web App
+| Method | Path | Fungsi |
+|---|---|---|
+| GET | `/` | Form deteksi dan hasil |
+| POST | `/deteksi` | Validasi gambar dan prediction |
+| GET | `/analisis/<token>` | Analisis LLM dari hasil bertanda tangan |
+| GET/POST | `/aspirasi` | Form dan pengiriman aspirasi via SMTP |
+| GET | `/health` | Liveness check ringan |
 
-Buka terminal baru, lalu jalankan:
+FastAPI lama di `api/` tetap tersedia untuk consumer API yang sudah ada, tetapi website Flask tidak memerlukan proses FastAPI terpisah.
 
-```bash
-streamlit run web/app.py
-```
+## Label model
 
-Streamlit biasanya akan berjalan di:
+Model mendukung 22 label: Acne, Actinic Keratosis, Benign Tumors, Bullous, Candidiasis, Drug Eruption, Eczema, Infestations/Bites, Lichen, Lupus, Moles, Psoriasis, Rosacea, Seborrheic Keratoses, Skin Cancer, Sun/Sunlight Damage, Tinea, Unknown/Normal, Vascular Tumors, Vasculitis, Vitiligo, dan Warts.
 
-```text
-http://localhost:8501
-```
+## Troubleshooting
 
----
+- **Model tidak siap:** pastikan ketiga path model/config benar dan bobot tersedia.
+- **Analisis lengkap gagal:** pastikan Ollama hidup, model sudah tersedia di Ollama, dan `OLLAMA_BASE_URL` dapat dijangkau.
+- **Aspirasi gagal:** periksa host, port, TLS, sender, recipient, serta kredensial SMTP. Form tidak dikosongkan ketika pengiriman gagal.
+- **Upload ditolak:** gunakan JPG/JPEG/PNG asli, maksimum sesuai `MAX_UPLOAD_MB`; mengganti ekstensi file saja tidak cukup.
+- **502 dari Nginx saat inference:** samakan timeout proxy dengan timeout Gunicorn dan waktu load awal TensorFlow.
 
-## 🧪 Mode Analisis
+## Privasi dan keselamatan
 
-DermSight mendukung dua mode analisis.
-
-### 1. Analyze Langsung
-
-Mode ini mengirim gambar ke satu endpoint dan langsung mendapatkan hasil prediksi serta rekomendasi.
-
-```text
-POST /skin/analyze
-```
-
-Response yang diharapkan:
-
-```json
-{
-  "predicted_label": "Acne",
-  "confidence": 0.92,
-  "recommendation": "..."
-}
-```
-
----
-
-### 2. Step-by-Step
-
-Mode ini memisahkan proses prediksi dan rekomendasi.
-
-#### Step 1 — Prediction
-
-```text
-POST /skin/predict
-```
-
-Response:
-
-```json
-{
-  "predicted_label": "Acne",
-  "confidence": 0.92
-}
-```
-
-#### Step 2 — Recommendation
-
-```text
-POST /recommendation/generate
-```
-
-Request:
-
-```json
-{
-  "predicted_label": "Acne",
-  "confidence": 0.92
-}
-```
-
-Response:
-
-```json
-{
-  "predicted_label": "Acne",
-  "confidence": 0.92,
-  "retrieval_result": {
-    "matched": true,
-    "match_type": "exact",
-    "input_label": "Acne",
-    "matched_label": "Acne",
-    "disease": "Acne",
-    "context": "..."
-  },
-  "recommendation": "..."
-}
-```
-
----
-
-## 📊 Training & Monitoring
-
-Training model menggunakan TensorFlow dan dapat dimonitor menggunakan TensorBoard.
-
-### Jalankan TensorBoard
-
-```bash
-tensorboard --logdir src/logs
-```
-
-Metrik yang dipantau:
-
-* Training loss
-* Validation loss
-* Training accuracy
-* Validation accuracy
-* Macro F1
-* MAE
-* Learning rate
-
----
-
-## 📄 Output Aplikasi
-
-Setelah analisis selesai, DermSight akan menampilkan:
-
-* Foto yang dianalisis
-* Perkiraan kondisi kulit
-* Tingkat keyakinan sistem
-* Rekomendasi edukatif
-* Disclaimer medis
-* Tombol unduh laporan
-
-Laporan hasil dapat diunduh dalam format Markdown.
-
----
-
-## 🗣️ Suara Masyarakat Daerah 3T
-
-DermSight menyediakan form aspirasi masyarakat daerah 3T.
-
-Form ini berfungsi untuk mengumpulkan:
-
-* daerah atau kabupaten pengguna,
-* kendala akses kesehatan kulit,
-* kebutuhan edukasi,
-* pesan tambahan.
-
-Data form disimpan sementara dalam file CSV lokal:
-
-```text
-data/suara_masyarakat_3t.csv
-```
-
----
-
-## 🗺️ Roadmap 6 Bulan
-
-![Roadmap 6 Bulan DermSight](docs/assets/roadmap-6-months.png)
-
-### Bulan 1 — Evaluasi Model
-
-* Review performa 22 label penyakit kulit.
-* Optimasi preprocessing dan augmentasi.
-* Pantau metrik accuracy, loss, dan macro F1.
-
-### Bulan 2 — Peningkatan Dataset
-
-* Tambah data real-world.
-* Perbaiki kualitas dan konsistensi label.
-* Perluas variasi warna kulit, cahaya, dan kamera.
-
-### Bulan 3 — Backend & LLM
-
-* Evaluasi deployment FastAPI dan LLM.
-* Pertimbangkan biaya server, latency, dan privasi.
-* Rancang opsi hosting yang lebih stabil.
-
-### Bulan 4 — Deploy Aplikasi
-
-* Siapkan web untuk uji publik.
-* Tambahkan logging dan monitoring.
-* Optimasi untuk koneksi lambat.
-
-### Bulan 5 — Uji Pengguna & Survei
-
-* Survei usability masyarakat.
-* Kumpulkan feedback dari daerah 3T.
-* Perbaiki UI/UX berdasarkan masukan pengguna.
-
-### Bulan 6 — Validasi & Integrasi
-
-* Validasi dengan tenaga kesehatan.
-* Perkaya konten edukasi.
-* Siapkan integrasi dengan layanan kesehatan lokal.
-
----
-
-## 🔐 Catatan Keamanan dan Privasi
-
-Pengguna disarankan untuk:
-
-* tidak mengunggah foto wajah penuh,
-* tidak mengunggah bagian tubuh sensitif,
-* tidak mengunggah foto yang memuat identitas pribadi,
-* menggunakan aplikasi hanya untuk edukasi awal.
-
-DermSight tidak dimaksudkan untuk menggantikan konsultasi medis profesional.
-
----
-
-## 🧯 Troubleshooting
-
-### FastAPI tidak bisa diakses
-
-Pastikan backend sudah berjalan:
-
-```bash
-uvicorn api.main:app --reload
-```
-
-Cek juga konfigurasi `.env`.
-
----
-
-### Streamlit tidak terbuka
-
-Jalankan ulang:
-
-```bash
-streamlit run web/app.py
-```
-
-Pastikan Streamlit sudah terinstall:
-
-```bash
-pip install streamlit
-```
-
----
-
-### Rekomendasi tidak muncul
-
-Pastikan service LLM sudah berjalan dan endpoint rekomendasi aktif.
-
----
-
-### Kamera tidak muncul di browser
-
-Pastikan browser memiliki izin untuk menggunakan kamera.
-
----
-
-### Hasil prediksi tidak muncul
-
-Pastikan:
-
-* gambar sudah dipilih,
-* FastAPI aktif,
-* model sudah tersedia,
-* endpoint sesuai dengan konfigurasi.
-
----
-
-## 🔗 Important Links
-
-| Kebutuhan              | Link                                             |
-| ---------------------- | ------------------------------------------------ |
-| Repository             | `https://github.com/JordanAryaLeksana/DermSight` |
-| Local FastAPI          | `http://localhost:8000`                          |
-| FastAPI Docs           | `http://localhost:8000/docs`                     |
-| Local Streamlit        | `http://localhost:8501`                          |
-| TensorBoard            | `http://localhost:6006`                          |
-| Dataset / Model Output | `src/outputs/`                                   |
-| Training Logs          | `src/logs/`                                      |
-| Form 3T CSV            | `data/suara_masyarakat_3t.csv`                   |
-
----
-
-## 🧑‍🔬 Author
-
-**Jordan Arya Leksana**
-
-Project: **DermSight — AI-Powered Skin Disease Education Assistant**
-
----
-
-## ⚠️ Medical Disclaimer
-
-DermSight bukan pengganti diagnosis dokter. Hasil dari sistem ini hanya digunakan untuk edukasi awal.
-
-Jika keluhan kulit memburuk, nyeri, menyebar, berdarah, bernanah, disertai demam, atau tidak membaik, segera konsultasikan ke dokter atau tenaga kesehatan terdekat.
-
----
-
-## ⭐ Support
-
-Jika project ini bermanfaat, berikan star pada repository ini untuk mendukung pengembangan DermSight.
+Jangan unggah wajah penuh, bagian intim, atau gambar yang memuat identitas pribadi. Cari bantuan tenaga kesehatan bila keluhan memburuk, nyeri, menyebar, berdarah, bernanah, disertai demam, atau tidak membaik.

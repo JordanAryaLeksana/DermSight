@@ -13,6 +13,7 @@ fastapi
 uvicorn
 python-multipart
 
-streamlit
+Flask>=3.1,<4
+gunicorn>=23,<24
 requests
 python-dotenv

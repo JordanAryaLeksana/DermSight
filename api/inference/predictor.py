@@ -59,7 +59,10 @@ class SkinDiseasePredictor:
             num_classes=len(self.class_names),
             image_channels=self.image_channels,
             input_size=self.image_size,
-            pretrained=bool(self.config.get("pretrained", True)),
+            # Bobot lengkap classifier dimuat dari model_path di bawah. Mengaktifkan
+            # pretrained di sini membuat Keras mencoba mengunduh ImageNet saat
+            # request pertama, sehingga inference gagal pada server offline.
+            pretrained=False,
             dropout=float(self.config.get("dropout", 0.4)),
             freeze_backbone=bool(self.config.get("freeze_backbone", False)),
             hidden_dim=int(self.config.get("hidden_dim", 512)),
