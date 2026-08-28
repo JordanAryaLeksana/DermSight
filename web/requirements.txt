@@ -6,6 +6,7 @@ numpy>=2,<3
 pandas>=2,<3
 h5py>=3.12,<4
 requests>=2.32,<3
-tensorflow>=2.18,<3
+# Inference web dijalankan di CPU (lihat api/inference/predictor.py).
+tensorflow-cpu>=2.18,<3
 python-dotenv>=1,<2
 pytest>=8,<9
