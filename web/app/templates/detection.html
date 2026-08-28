@@ -1,48 +1,41 @@
 {% extends "base.html" %}
 {% block title %}Deteksi Penyakit Kulit · DermSight{% endblock %}
 {% block content %}
-<section class="hero grid-two">
-  <div>
-    <p class="eyebrow">Analisis awal berbasis AI</p>
-    <h1>Deteksi<br>Penyakit Kulit</h1>
-  </div>
-  <div class="hero-copy">
-    <p class="lead">Unggah foto area kulit untuk mendapatkan hasil analisis awal dari sistem DermSight.</p>
+<section class="detection-hero" aria-labelledby="detection-title">
+  <span class="doodle doodle-spark" aria-hidden="true">✦</span>
+  <span class="doodle doodle-loop" aria-hidden="true">↝</span>
+  <div class="hero-intro">
+    <p class="eyebrow"><span></span> Analisis kulit berbasis AI</p>
+    <h1 id="detection-title">Kenali kulitmu,<br><em>lebih awal.</em></h1>
+    <p class="lead">Ambil atau unggah satu foto. DermSight akan membantu membaca kemiripan kondisi kulit dalam beberapa detik.</p>
     <div class="trust-pills" aria-label="Keunggulan layanan">
-      <span>Gratis</span><span>Tanpa login</span><span>Privasi terjaga</span>
+      <span>⚡ Cepat</span><span>◉ Tanpa login</span><span>♢ Privat</span>
     </div>
   </div>
-</section>
 
-<section class="detection-layout" aria-label="Form deteksi kulit">
-  <form class="upload-card" method="post" action="{{ url_for('main.detect') }}" enctype="multipart/form-data" data-detection-form>
+  <form class="upload-card upload-card-featured" method="post" action="{{ url_for('main.detect') }}" enctype="multipart/form-data" data-detection-form>
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="step-label"><span>01</span> Pilih foto</div>
+    <div class="upload-heading"><span class="number-sticker">01</span><div><strong>Mulai dari sini</strong><small>Pilih foto area kulit</small></div></div>
     <label class="upload-zone" for="skin-image" data-tour-target="upload">
-      <span class="upload-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg></span>
-      <strong>Unggah foto kulit</strong>
-      <span>Tekan untuk memilih foto atau buka kamera</span>
-      <small>JPG atau PNG · Maks. 8 MB</small>
+      <span class="upload-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 16.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2.5M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/></svg></span>
+      <strong>Taruh fotomu di sini</strong>
+      <span>atau ketuk untuk membuka kamera / galeri</span>
+      <small>JPG &amp; PNG · MAKS. 8 MB</small>
     </label>
     <input class="file-input" id="skin-image" name="image" type="file" accept="image/jpeg,image/png" capture="environment" required data-image-input>
     <div class="preview-box" data-preview-box hidden>
       <img src="" alt="Pratinjau foto kulit yang dipilih" data-image-preview>
       <div><strong data-file-name></strong><span>Foto siap dianalisis</span></div>
     </div>
-    <div class="photo-tips">
-      <strong>Foto yang baik</strong>
-      <ul>
-        <li>Cahaya cukup dan gambar tidak buram</li>
-        <li>Fokus pada area kulit, jarak sekitar 15–30 cm</li>
-        <li>Hindari wajah penuh dan informasi pribadi</li>
-      </ul>
-    </div>
+    <p class="quick-tip"><span>☀</span> Cahaya cukup · Fokus pada area kulit · Jangan buram</p>
     <button class="button button-primary button-wide" type="submit" data-tour-target="detect" data-submit-button>
-      <span data-button-label>Deteksi Sekarang</span><span aria-hidden="true">→</span>
+      <span data-button-label>Deteksi kulit saya</span><span class="button-arrow" aria-hidden="true">↗</span>
     </button>
     <p class="loading-note" role="status" data-loading-note hidden>Gambar sedang dianalisis. Mohon tunggu…</p>
   </form>
+</section>
 
+<section class="result-stage" aria-label="Hasil deteksi kulit">
   <div class="result-column" id="hasil" data-tour-target="result" tabindex="-1">
     <div class="step-label"><span>02</span> Hasil analisis</div>
     {% if error %}
@@ -70,9 +63,8 @@
       </section>
     {% else %}
       <section class="empty-result">
-        <div class="empty-illustration" aria-hidden="true"><span></span><span></span><span></span></div>
-        <h2>Hasil akan tampil di sini</h2>
-        <p>Pilih foto yang jelas, lalu tekan tombol <strong>Deteksi Sekarang</strong>.</p>
+        <div class="empty-illustration" aria-hidden="true"><span></span><span></span><span></span><b>?</b></div>
+        <div><h2>Hasilmu muncul di sini</h2><p>Pilih foto yang jelas di atas, lalu tekan <strong>Deteksi kulit saya</strong>.</p></div>
       </section>
     {% endif %}
   </div>
