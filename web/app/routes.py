@@ -35,13 +35,10 @@ def _llm_service():
     return current_app.extensions.setdefault(
         "llm_service",
         LLMService(
-            current_app.config["DISEASE_LIST_PATH"],
-            current_app.config["OLLAMA_BASE_URL"],
-            current_app.config["OLLAMA_MODEL"],
-            current_app.config["LLM_TIMEOUT"],
+            disease_list_path=current_app.config["DISEASE_LIST_PATH"],
+            timeout=current_app.config["LLM_TIMEOUT"],
         ),
     )
-
 
 def _serializer():
     return URLSafeTimedSerializer(current_app.secret_key, salt="dermsight-analysis-v1")
