@@ -7,11 +7,21 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from .services.email_service import EmailConfigurationError, EmailService
 from .services.llm_service import LLMService
 from .services.prediction_service import PredictionService, UploadValidationError, validate_image
-
-
+from .extensions import cache, limiter
+import hashlib
 bp = Blueprint("main", __name__)
 logger = logging.getLogger(__name__)
 ASPIRATION_KINDS = ("Saran", "Kritik", "Laporan", "Aspirasi")
+
+def _analysis_cache_key(
+    token: str,
+) -> str:
+    digest = hashlib.sha256(
+        token.encode("utf-8")
+    ).hexdigest()
+
+    return f"analysis:{digest}"
+
 
 
 def _valid_csrf():
@@ -90,38 +100,139 @@ def detect():
 
 
 @bp.get("/analisis/<token>")
+@limiter.limit("20 per minute")
 def analysis(token):
     try:
         payload = _serializer().loads(
-            token, max_age=current_app.config["ANALYSIS_TOKEN_MAX_AGE"]
+            token,
+            max_age=current_app.config[
+                "ANALYSIS_TOKEN_MAX_AGE"
+            ],
         )
-        label = str(payload["label"])
-        confidence = float(payload["confidence"])
-        if not label or not 0 <= confidence <= 1:
-            raise BadSignature("Invalid payload")
+
+        label = str(
+            payload["label"]
+        )
+
+        confidence = float(
+            payload["confidence"]
+        )
+
+        if (
+            not label
+            or not 0 <= confidence <= 1
+        ):
+            raise BadSignature(
+                "Invalid payload"
+            )
+
     except SignatureExpired:
-        return render_template("errors/analysis_expired.html"), 410
-    except (BadSignature, KeyError, TypeError, ValueError):
-        return render_template("errors/analysis_expired.html"), 400
+        return render_template(
+            "errors/analysis_expired.html"
+        ), 410
+
+    except (
+        BadSignature,
+        KeyError,
+        TypeError,
+        ValueError,
+    ):
+        return render_template(
+            "errors/analysis_expired.html"
+        ), 400
+
+    cache_key = _analysis_cache_key(
+        token
+    )
+
+    cached_recommendation = cache.get(
+        cache_key
+    )
+
+    if cached_recommendation is not None:
+        logger.info(
+            "Analysis cache hit | "
+            "label=%s | key=%s",
+            label,
+            cache_key[:20],
+        )
+
+        return render_template(
+            "analysis.html",
+            label=_display_label(label),
+            confidence_percent=round(
+                confidence * 100
+            ),
+            recommendation=(
+                cached_recommendation
+            ),
+        )
+
+    logger.info(
+        "Analysis cache miss | "
+        "label=%s | key=%s",
+        label,
+        cache_key[:20],
+    )
 
     try:
-        detail = _llm_service().analyze(label, confidence)
-        return render_template(
-            "analysis.html",
-            label=_display_label(label),
-            confidence_percent=round(confidence * 100),
-            recommendation=detail.get("recommendation", ""),
+        detail = _llm_service().analyze(
+            label,
+            confidence,
         )
-    except Exception:
-        logger.exception("LLM analysis failed for label=%s", label)
+
+        recommendation = detail.get(
+            "recommendation",
+            "",
+        )
+
+        if recommendation:
+            cache.set(
+                cache_key,
+                recommendation,
+                timeout=current_app.config[
+                    "ANALYSIS_CACHE_TTL"
+                ],
+            )
+
+            logger.info(
+                "Analysis cached | "
+                "label=%s | ttl=%s",
+                label,
+                current_app.config[
+                    "ANALYSIS_CACHE_TTL"
+                ],
+            )
+
         return render_template(
             "analysis.html",
             label=_display_label(label),
-            confidence_percent=round(confidence * 100),
-            analysis_error="Analisis lengkap sedang tidak tersedia. Hasil deteksi Anda tetap dapat digunakan sebagai informasi awal.",
+            confidence_percent=round(
+                confidence * 100
+            ),
+            recommendation=recommendation,
+        )
+
+    except Exception:
+        logger.exception(
+            "LLM analysis failed for label=%s",
+            label,
+        )
+
+        return render_template(
+            "analysis.html",
+            label=_display_label(label),
+            confidence_percent=round(
+                confidence * 100
+            ),
+            analysis_error=(
+                "Analisis lengkap sedang tidak "
+                "tersedia. Hasil deteksi Anda "
+                "tetap dapat digunakan sebagai "
+                "informasi awal."
+            ),
         ), 503
-
-
+    
 @bp.route("/aspirasi", methods=["GET", "POST"])
 def aspiration():
     values = {"kind": "Saran", "name": "", "contact": "", "message": ""}

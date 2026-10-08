@@ -5,13 +5,15 @@ from flask import Flask, render_template, request, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .config import Config
-
+from .extensions import cache, limiter
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=False)
     app.config.from_object(Config)
     if test_config:
         app.config.update(test_config)
+    cache.init_app(app)
+    limiter.init_app(app)
 
     if app.config["TRUST_PROXY_HEADERS"]:
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)

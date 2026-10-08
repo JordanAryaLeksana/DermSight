@@ -2,6 +2,7 @@ import pytest
 import requests
 
 from llm.ollama_client import OllamaClient
+from llm.sumopod_client import SumoPodClient
 from llm.recommendation import SkinRecommendationService
 
 
@@ -32,7 +33,7 @@ def test_generate_recommendation_with_real_ollama():
 
     service = SkinRecommendationService(
         retriever=FakeRetriever(),
-        llm_client=OllamaClient(timeout=120),
+        llm_client=SumoPodClient(timeout=120),
     )
 
     result = service.generate_recommendation(

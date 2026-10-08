@@ -25,9 +25,7 @@ class LLMService:
                         retriever=SkinDiseaseRetriever(
                             self.disease_list_path
                         ),
-                        llm_client=SumoPodClient(
-                            timeout=self.timeout
-                        ),
+                        llm_client=SumoPodClient()
                     )
 
         return self.__class__._service

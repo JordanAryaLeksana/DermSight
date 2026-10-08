@@ -1,6 +1,6 @@
 import os
 
-from llm.ollama_client import OllamaClient
+from llm.sumopod_client import SumoPodClient
 from llm.rag_retriever import SkinDiseaseRetriever
 from llm.recommendation import SkinRecommendationService
 
@@ -52,7 +52,7 @@ def get_recommendation_service() -> SkinRecommendationService:
             disease_list_path=disease_list_path,
         )
 
-        llm_client = OllamaClient()
+        llm_client = SumoPodClient()
 
         _recommendation_service = SkinRecommendationService(
             retriever=retriever,

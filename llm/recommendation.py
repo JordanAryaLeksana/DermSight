@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from llm.ollama_client import OllamaClient
+from llm.sumopod_client import SumoPodClient
 from llm.prompts import build_skin_disease_prompt
 from llm.rag_retriever import SkinDiseaseRetriever
 from utils.logger import get_logger
@@ -13,7 +13,7 @@ class SkinRecommendationService:
     def __init__(
         self,
         retriever: SkinDiseaseRetriever,
-        llm_client: OllamaClient,
+        llm_client: SumoPodClient,
     ):
         logger.info("Initializing SkinRecommendationService")
 
